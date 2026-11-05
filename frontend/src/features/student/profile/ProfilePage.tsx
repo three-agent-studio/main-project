@@ -16,7 +16,6 @@ export default function ProfilePage() {
   const [logoutError, setLogoutError] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
-    setState({ kind: 'loading' });
     api<Me>('/me/', { signal: controller.signal }).then(
       (user) => { if (!controller.signal.aborted) setState({ kind: 'ready', user }); },
       (error: unknown) => {
@@ -42,7 +41,7 @@ export default function ProfilePage() {
   return <Page title="Мой профиль">
     {state.kind === 'loading' && <p role="status">Загрузка профиля…</p>}
     {state.kind === 'anonymous' && <Card title="Необходимо войти"><a className="button" href="/auth/login/?next=/profile">Войти в кабинет</a></Card>}
-    {state.kind === 'error' && <><p role="alert">Не удалось загрузить профиль.</p><button onClick={() => setAttempt(attempt + 1)}>Повторить</button></>}
+    {state.kind === 'error' && <><p role="alert">Не удалось загрузить профиль.</p><button onClick={() => { setState({ kind: 'loading' }); setAttempt(attempt + 1); }}>Повторить</button></>}
     {state.kind === 'ready' && <>
       <Card title={state.user.student_profile?.full_name ?? state.user.username}>
         {state.user.student_profile ? <dl>
