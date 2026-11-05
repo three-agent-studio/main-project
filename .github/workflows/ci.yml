@@ -45,14 +45,9 @@ jobs:
       - run: python manage.py migrate --noinput
       - run: pytest
       - run: python manage.py spectacular --file ../contracts/openapi.generated.yaml --validate --fail-on-warn
+      - run: git diff --exit-code -- ../contracts/openapi.generated.yaml
+      - run: pip check
       - run: pip freeze > ../contracts/python-resolved.txt
-      - name: Export dependency review data
-        run: |
-          python - <<'PYCODE'
-          import base64, json, pathlib, zlib
-          data = {str(p): p.read_text() for p in pathlib.Path('../contracts').glob('*') if p.is_file()}
-          print('REVIEW_BUNDLE=' + base64.b64encode(zlib.compress(json.dumps(data).encode())).decode())
-          PYCODE
       - uses: actions/upload-artifact@v4
         with:
           name: backend-contract-and-dependencies
@@ -95,19 +90,11 @@ jobs:
       - run: pip install -r ../backend/requirements.txt
       - run: python ../backend/manage.py migrate --noinput
       - run: python ../backend/manage.py shell < ../backend/tests/seed_browser.py
-      - run: npm install
+      - run: npm ci
       - run: npm audit --audit-level=moderate
       - run: npm run lint
       - run: npm test
       - run: npm run build
-      - name: Export dependency review data
-        run: |
-          python - <<'PYCODE'
-          import base64, json, pathlib, zlib
-          files = [pathlib.Path('package.json'), pathlib.Path('package-lock.json'), *pathlib.Path('dist').rglob('*')]
-          data = {str(p): p.read_text() for p in files if p.is_file()}
-          print('REVIEW_BUNDLE=' + base64.b64encode(zlib.compress(json.dumps(data).encode())).decode())
-          PYCODE
       - run: npx playwright install chromium
         timeout-minutes: 3
       - run: npm run test:e2e
