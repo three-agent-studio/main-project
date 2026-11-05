@@ -56,6 +56,9 @@ jobs:
             contracts/python-resolved.txt
   frontend:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
     timeout-minutes: 15
     services:
       postgres:
@@ -72,7 +75,7 @@ jobs:
       POSTGRES_DB: deanery
       POSTGRES_USER: deanery
       POSTGRES_PASSWORD: ci-ephemeral-only
-      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_HOST: postgres
       TEST_POSTGRES: '1'
       DJANGO_SETTINGS_MODULE: config.settings.development
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,127.0.0.2
@@ -96,8 +99,6 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
-      - run: npx playwright install --with-deps chromium webkit
-        timeout-minutes: 5
       - run: npm run test:e2e
         timeout-minutes: 5
       - uses: actions/upload-artifact@v4
