@@ -71,3 +71,38 @@ def test_login_logout_csrf_and_password_hashing(students):
     })
     assert response.status_code == 302
     assert client.get(reverse("me")).status_code == 403
+
+
+def test_demo_student_command_creates_hashed_password_and_profile(db):
+    from django.core.management import call_command
+    from django.core.management.base import CommandError
+
+    # Synthetic test-only input. Real provisioning passwords never belong in test fixtures.
+    password = "Synthetic-Student-Only-47!"
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr("accounts.management.commands.create_demo_student.getpass.getpass",
+                      lambda prompt: password)
+        call_command("create_demo_student", "demo_local")
+        user = get_user_model().objects.get(username="demo_local")
+        assert user.check_password(password)
+        assert not user.is_staff and not user.is_superuser
+        assert user.student_profile.group.name == "ДЕМО-1"
+        with pytest.raises(CommandError):
+            call_command("create_demo_student", "demo_local")
+
+
+def test_demo_student_command_rejects_weak_password_without_creating_user(db):
+    from django.core.management import call_command
+    from django.core.management.base import CommandError
+    from django.test import override_settings
+
+    with pytest.MonkeyPatch.context() as patch, override_settings(
+        AUTH_PASSWORD_VALIDATORS=[{
+            "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
+        }]
+    ):
+        patch.setattr("accounts.management.commands.create_demo_student.getpass.getpass",
+                      lambda prompt: "short")
+        with pytest.raises(CommandError):
+            call_command("create_demo_student", "invalid_demo")
+    assert not get_user_model().objects.filter(username="invalid_demo").exists()

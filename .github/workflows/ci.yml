@@ -75,6 +75,7 @@ jobs:
       POSTGRES_HOST: 127.0.0.1
       TEST_POSTGRES: '1'
       DJANGO_SETTINGS_MODULE: config.settings.development
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,127.0.0.2
 
     defaults:
       run:
@@ -95,10 +96,10 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
-      - run: npx playwright install chromium
-        timeout-minutes: 3
+      - run: npx playwright install --with-deps chromium webkit
+        timeout-minutes: 5
       - run: npm run test:e2e
-        timeout-minutes: 3
+        timeout-minutes: 5
       - uses: actions/upload-artifact@v4
         with:
           name: frontend-build-and-lock
