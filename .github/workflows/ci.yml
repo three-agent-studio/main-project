@@ -1,0 +1,70 @@
+name: Foundation checks
+on:
+  push:
+    branches: [main, 'feat/**']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: deanery
+          POSTGRES_USER: deanery
+          POSTGRES_PASSWORD: ci-ephemeral-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U deanery -d deanery"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      POSTGRES_DB: deanery
+      POSTGRES_USER: deanery
+      POSTGRES_PASSWORD: ci-ephemeral-only
+      POSTGRES_HOST: 127.0.0.1
+      TEST_POSTGRES: '1'
+      DJANGO_SETTINGS_MODULE: config.settings.test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements-dev.txt
+      - run: ruff check .
+      - run: python manage.py check
+      - run: python manage.py makemigrations --check --dry-run
+      - run: python manage.py migrate --noinput
+      - run: pytest
+      - run: python manage.py spectacular --file ../contracts/openapi.generated.yaml --validate --fail-on-warn
+      - run: pip freeze > ../contracts/python-resolved.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-contract-and-dependencies
+          path: |
+            contracts/openapi.generated.yaml
+            contracts/python-resolved.txt
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build-and-lock
+          path: |
+            frontend/dist
+            frontend/package-lock.json

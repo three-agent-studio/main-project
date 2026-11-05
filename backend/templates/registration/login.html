@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Вход — Цифровой деканат</title>
+<style>
+body{font-family:system-ui,sans-serif;margin:0;background:#f4f6fb;color:#17243c;padding:24px}
+main{max-width:400px;margin:8vh auto;background:white;padding:24px;border-radius:16px}
+label,input,button{display:block;box-sizing:border-box;width:100%}input,button{padding:12px;font:inherit;margin:8px 0 20px}
+button{background:#244bc4;color:white;border:0;border-radius:8px;cursor:pointer}a{color:#244bc4}
+.errorlist{color:#9d2424}input:focus-visible,button:focus-visible{outline:3px solid #5075ed;outline-offset:2px}
+</style></head><body><main>
+<h1>Вход в кабинет</h1><p>Конкурсный прототип. Не официальный сервис вуза.</p>
+<form method="post">{% csrf_token %}{{ form.as_p }}
+<input type="hidden" name="next" value="{{ next }}"><button type="submit">Войти</button></form>
+<a href="/">На главную</a>
+</main></body></html>
