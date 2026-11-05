@@ -42,6 +42,13 @@ jobs:
       - run: pytest
       - run: python manage.py spectacular --file ../contracts/openapi.generated.yaml --validate --fail-on-warn
       - run: pip freeze > ../contracts/python-resolved.txt
+      - name: Export dependency review data
+        run: |
+          python - <<'PYCODE'
+          import base64, json, pathlib, zlib
+          data = {str(p): p.read_text() for p in pathlib.Path('../contracts').glob('*') if p.is_file()}
+          print('REVIEW_BUNDLE=' + base64.b64encode(zlib.compress(json.dumps(data).encode())).decode())
+          PYCODE
       - uses: actions/upload-artifact@v4
         with:
           name: backend-contract-and-dependencies
@@ -59,9 +66,18 @@ jobs:
         with:
           node-version: '22'
       - run: npm install
+      - run: npm audit --json || true
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - name: Export dependency review data
+        run: |
+          python - <<'PYCODE'
+          import base64, json, pathlib, zlib
+          files = [pathlib.Path('package-lock.json'), *pathlib.Path('dist').rglob('*')]
+          data = {str(p): p.read_text() for p in files if p.is_file()}
+          print('REVIEW_BUNDLE=' + base64.b64encode(zlib.compress(json.dumps(data).encode())).decode())
+          PYCODE
       - uses: actions/upload-artifact@v4
         with:
           name: frontend-build-and-lock
