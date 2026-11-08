@@ -1,5 +1,6 @@
 """Shared settings. Environment-specific choices belong in development/production/test."""
 import os
+from datetime import timedelta
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -9,7 +10,7 @@ ALLOWED_HOSTS = [h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "").split(","
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
-    "rest_framework", "drf_spectacular", "accounts", "core",
+    "rest_framework", "drf_spectacular", "accounts", "core", "axes",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -20,6 +21,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "core.middleware.PrivateResponseMiddleware",
+    "axes.middleware.AxesMiddleware",
 ]
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
@@ -43,6 +45,25 @@ DATABASES = {"default": {
 }}
 # Define the custom user before the first migration; changing it later is expensive.
 AUTH_USER_MODEL = "accounts.User"
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
+]
+# Database tracking is shared across Gunicorn processes and survives restarts.
+# Avoid LocMemCache here: a counter local to one worker is not a reliable boundary.
+AXES_HANDLER = "axes.handlers.database.AxesDatabaseHandler"
+AXES_FAILURE_LIMIT = 5
+AXES_COOLOFF_TIME = timedelta(minutes=15)
+AXES_LOCKOUT_PARAMETERS = ["username"]
+AXES_USERNAME_CALLABLE = "accounts.login_security.normalized_login_username"
+AXES_CLIENT_IP_CALLABLE = "accounts.login_security.no_client_ip"
+AXES_RESET_ON_SUCCESS = True
+AXES_RESET_COOL_OFF_ON_FAILURE_DURING_LOCKOUT = False
+AXES_LOCKOUT_TEMPLATE = "registration/locked_out.html"
+AXES_HTTP_RESPONSE_CODE = 429
+AXES_ENABLE_RETRY_AFTER_HEADER = True
+AXES_DISABLE_ACCESS_LOG = True
+AXES_ALLOWED_CORS_ORIGINS = []
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -78,3 +99,8 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],
 }
+
+# W006 recommends an IP counter. Our account-wide key cannot be bypassed by changing
+# IP, User-Agent or cookies, and avoids blocking a campus sharing one NAT/proxy.
+# Rotation and persistence are explicitly covered in test_auth_access.py.
+SILENCED_SYSTEM_CHECKS = ["axes.W006"]
