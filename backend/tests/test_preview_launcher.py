@@ -260,3 +260,49 @@ def test_reserved_hostname_validation_precedes_network_or_server_start(
     with pytest.raises(SystemExit) as result:
         launcher.main()
     assert result.value.code == 2
+
+
+def test_expiry_message_reconnects_even_when_ssh_stays_alive(monkeypatch):
+    from collections import deque
+    from io import StringIO
+    from types import SimpleNamespace
+
+    launcher = load_launcher()
+    read_fd, write_fd = os.pipe()
+    os.write(write_fd, b"Port forwarding for preview.serveousercontent.com expired\n")
+
+    class Selector:
+        calls = 0
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def register(self, *args):
+            pass
+
+        def select(self, **kwargs):
+            self.calls += 1
+            assert self.calls == 1, "An expired forward must not wait for SSH to exit"
+            return [(SimpleNamespace(fileobj=stream), 1)]
+
+    monkeypatch.setattr(launcher.selectors, "DefaultSelector", Selector)
+    try:
+        with os.fdopen(read_fd, "rb", buffering=0) as stream:
+            tunnel = SimpleNamespace(stdout=stream, poll=lambda: None)
+            assert (
+                list(
+                    launcher.connection_urls(
+                        tunnel,
+                        "serveo",
+                        lambda: True,
+                        StringIO(),
+                        deque(maxlen=12),
+                    )
+                )
+                == []
+            )
+    finally:
+        os.close(write_fd)

@@ -127,6 +127,10 @@ def connection_urls(tunnel, provider, server_is_running, log_file, recent_output
                 pending = lines.pop()
                 for line in lines:
                     recent_output.append(line.strip())
+                    # Some providers expire the forward before closing SSH itself.
+                    # A live SSH process is then no evidence of a working public site.
+                    if re.search(r"Port forwarding for [a-zA-Z0-9.-]+ expired", line):
+                        return
                     if line.startswith("ssh:") or "Permission denied" in line:
                         print(line.strip(), file=sys.stderr, flush=True)
                     if provider == "serveo" and "Forwarding HTTP traffic" not in line:
