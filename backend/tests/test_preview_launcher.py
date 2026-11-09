@@ -60,6 +60,8 @@ def test_rotation_in_buffered_output_updates_origin_and_cleans_up(monkeypatch, t
 
     def spawn(argv, **kwargs):
         if argv[0] == "ssh":
+            # Require the proxy contract explicitly; TLS terminates at the tunnel service.
+            assert argv[-2:] == ["--", "--inject-http-proxy-headers"]
             return tunnel
         calls.append(argv)
         process = Server()

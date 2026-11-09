@@ -72,6 +72,8 @@ def main():
                 "-R",
                 f"80:127.0.0.1:{args.port}",
                 "nokey@localhost.run",
+                "--",
+                "--inject-http-proxy-headers",
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
