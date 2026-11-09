@@ -1,13 +1,16 @@
 """Share this checkout over HTTPS; keep this process running while the team reviews it."""
 
 import argparse
+import json
 import os
 import re
 import selectors
 import signal
 import subprocess
 import sys
+import time
 from collections import deque
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -74,6 +77,165 @@ def stop(process):
             process.wait()
 
 
+def write_status(state, phase, origin):
+    # Local operational state only; neither credentials nor database data belong here.
+    target = state / "status.json"
+    temporary = state / "status.tmp"
+    fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as stream:
+        json.dump(
+            {
+                "phase": phase,
+                "url": origin,
+                "updated_at": datetime.now(UTC).isoformat(),
+            },
+            stream,
+        )
+    os.replace(temporary, target)
+
+
+def connection_urls(tunnel, provider, server_is_running, log_file, recent_output):
+    """Drain every buffered SSH line, including its final expiry message before exit."""
+    pending = ""
+    with selectors.DefaultSelector() as events:
+        events.register(tunnel.stdout, selectors.EVENT_READ)
+        while True:
+            if not server_is_running():
+                raise RuntimeError(
+                    "Preview server stopped; fix the server error before reconnecting."
+                )
+            ready = events.select(timeout=1)
+            if not ready and tunnel.poll() is not None:
+                break
+            for event, _ in ready:
+                chunk = os.read(event.fileobj.fileno(), 65536)
+                if not chunk:
+                    # The caller reaps its own SSH child even if poll() lags EOF.
+                    return
+                decoded = chunk.decode(errors="replace")
+                log_file.write(decoded)
+                log_file.flush()
+                pending += decoded
+                lines = pending.split("\n")
+                pending = lines.pop()
+                for line in lines:
+                    recent_output.append(line.strip())
+                    if line.startswith("ssh:") or "Permission denied" in line:
+                        print(line.strip(), file=sys.stderr, flush=True)
+                    if provider == "serveo" and "Forwarding HTTP traffic" not in line:
+                        continue
+                    if match := PUBLIC_URLS[provider].search(line):
+                        yield match.group()
+
+
+def supervise(args, state, log_file):
+    server = tunnel = awake = None
+    origin = None
+    failures = 0
+    recent_output = deque(maxlen=12)
+    fatal_errors = (
+        "REMOTE HOST IDENTIFICATION HAS CHANGED",
+        "Host key verification failed",
+        "Permission denied",
+        "illegal option",
+        "Bad configuration option",
+    )
+
+    def server_is_running():
+        return server is None or server.poll() is None
+
+    try:
+        if sys.platform == "darwin":
+            awake = subprocess.Popen(["caffeinate", "-i", "-w", str(os.getpid())])
+        while True:
+            write_status(state, "connecting", origin)
+            recent_output.clear()
+            started = time.monotonic()
+            log_file.write(
+                f"\n[{datetime.now(UTC).isoformat()}] Connecting {args.provider}\n"
+            )
+            log_file.flush()
+            assigned = False
+            tunnel = subprocess.Popen(
+                tunnel_command(args.provider, state, args.port),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            try:
+                for public_url in connection_urls(
+                    tunnel,
+                    args.provider,
+                    server_is_running,
+                    log_file,
+                    recent_output,
+                ):
+                    assigned = True
+                    # Preserve the process and its sessions on same-domain reconnects.
+                    # A changed host must update both host validation and CSRF together.
+                    if public_url != origin:
+                        if origin is not None:
+                            print(
+                                f"Public address changed: {origin} -> {public_url}",
+                                flush=True,
+                            )
+                        stop(server)
+                        origin = public_url
+                        server = subprocess.Popen(
+                            [
+                                sys.executable,
+                                str(ROOT / "scripts/team_preview.py"),
+                                "--origin",
+                                origin,
+                                "--database-env",
+                                str(args.database_env.resolve()),
+                                "--port",
+                                str(args.port),
+                            ]
+                        )
+                    write_status(state, "tunnel_connected", origin)
+                    print(
+                        f"Team preview: {origin} (wait for Gunicorn workers on first start)",
+                        flush=True,
+                    )
+            finally:
+                stop(tunnel)
+                tunnel.stdout.close()
+            details = "\n".join(recent_output)
+            if any(message in details for message in fatal_errors):
+                raise RuntimeError(
+                    f"SSH configuration/authentication error:\n{details}"
+                )
+            # A normal long-lived session expiring is recoverable. Repeated rapid
+            # failures have bounded exponential backoff; never spin on a broken setup.
+            failures = (
+                0 if assigned and time.monotonic() - started >= 60 else failures + 1
+            )
+            if failures >= 5:
+                raise RuntimeError(f"SSH failed 5 consecutive times:\n{details}")
+            delay = min(3 * 2**failures, 30)
+            write_status(state, "reconnecting", origin)
+            log_file.write(
+                f"\n[{datetime.now(UTC).isoformat()}] Reconnecting in {delay}s\n"
+            )
+            log_file.flush()
+            print(
+                f"HTTPS tunnel ended; reconnecting in {delay}s. Last address: {origin}",
+                flush=True,
+            )
+            time.sleep(delay)
+    except KeyboardInterrupt:
+        print("Stopping team preview.", flush=True)
+        write_status(state, "stopped", origin)
+    except (RuntimeError, OSError) as error:
+        write_status(state, "failed", origin)
+        print(str(error), file=sys.stderr, flush=True)
+        raise SystemExit(1) from None
+    finally:
+        stop(server)
+        stop(tunnel)
+        stop(awake)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--database-env", type=Path, default=ROOT / ".env")
@@ -88,91 +250,14 @@ def main():
         parser.error("Build frontend first: cd frontend && npm ci && npm run build")
     state = ROOT / ".team-preview"
     state.mkdir(mode=0o700, exist_ok=True)
-    server = tunnel = awake = None
-    origin = None
-    recent_output = deque(maxlen=12)
-    log_file = os.fdopen(
-        os.open(state / "tunnel.log", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600), "w"
-    )
 
     def interrupted(signum, frame):
         raise KeyboardInterrupt
 
     signal.signal(signal.SIGTERM, interrupted)
-    try:
-        # A dedicated known_hosts file preserves SSH host verification between launches.
-        # nokey needs no service account; its public URL can rotate after a few hours.
-        tunnel = subprocess.Popen(
-            tunnel_command(args.provider, state, args.port),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        if sys.platform == "darwin":
-            awake = subprocess.Popen(["caffeinate", "-i", "-w", str(os.getpid())])
-        pending = ""
-        with selectors.DefaultSelector() as events:
-            events.register(tunnel.stdout, selectors.EVENT_READ)
-            while tunnel.poll() is None:
-                if server is not None and server.poll() is not None:
-                    raise RuntimeError(
-                        f"Preview server stopped (exit {server.returncode})."
-                    )
-                for event, _ in events.select(timeout=1):
-                    chunk = os.read(event.fileobj.fileno(), 65536)
-                    if not chunk:
-                        continue
-                    pending += chunk.decode(errors="replace")
-                    log_file.write(chunk.decode(errors="replace"))
-                    log_file.flush()
-                    lines = pending.split("\n")
-                    pending = lines.pop()
-                    for line in lines:
-                        recent_output.append(line.strip())
-                        if line.startswith("ssh:") or "Permission denied" in line:
-                            print(line.strip(), file=sys.stderr, flush=True)
-                        if (
-                            args.provider == "serveo"
-                            and "Forwarding HTTP traffic" not in line
-                        ):
-                            continue
-                        match = PUBLIC_URLS[args.provider].search(line)
-                        if not match or match.group() == origin:
-                            continue
-                        origin = match.group()
-                        stop(server)
-                        # Restart only our own server when the free URL rotates. Update both
-                        # host validation and CSRF origin together, without wildcard hosts.
-                        server = subprocess.Popen(
-                            [
-                                sys.executable,
-                                str(ROOT / "scripts/team_preview.py"),
-                                "--origin",
-                                origin,
-                                "--database-env",
-                                str(args.database_env.resolve()),
-                                "--port",
-                                str(args.port),
-                            ],
-                        )
-                        print(
-                            f"Team preview: {origin} (server starting; wait for Gunicorn workers)",
-                            flush=True,
-                        )
-        raise RuntimeError(
-            f"HTTPS tunnel ended (exit {tunnel.wait()}); restart this command."
-        )
-    except RuntimeError as error:
-        print(str(error), file=sys.stderr, flush=True)
-        # Do not hide the actual SSH failure behind an unhelpful exit code 255.
-        print("\n".join(recent_output), file=sys.stderr, flush=True)
-        raise SystemExit(1) from None
-    except KeyboardInterrupt:
-        print("Stopping team preview.", flush=True)
-    finally:
-        stop(server)
-        stop(tunnel)
-        stop(awake)
-        log_file.close()
+    fd = os.open(state / "tunnel.log", os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    with os.fdopen(fd, "a") as log_file:
+        supervise(args, state, log_file)
 
 
 if __name__ == "__main__":

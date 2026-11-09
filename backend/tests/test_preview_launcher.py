@@ -18,22 +18,56 @@ def load_launcher():
 @pytest.mark.parametrize(
     "provider,domain", [("localhost-run", "lhr.life"), ("serveo", "serveo.net")]
 )
-def test_rotation_in_buffered_output_updates_origin_and_cleans_up(
-    monkeypatch, tmp_path, provider, domain
-):
-    launcher = load_launcher()
-    (tmp_path / "frontend/dist").mkdir(parents=True)
-    (tmp_path / "frontend/dist/index.html").write_text("compiled")
-    (tmp_path / ".env").touch()
-    monkeypatch.setattr(launcher, "ROOT", tmp_path)
-    monkeypatch.setattr(launcher.sys, "argv", ["share_preview", "--provider", provider])
-    monkeypatch.setattr(launcher.sys, "platform", "linux")
-    monkeypatch.setattr(launcher.signal, "signal", lambda *args: None)
-    servers = []
-    calls = []
+def test_buffered_ssh_output_is_drained_even_after_process_exit(provider, domain):
+    from collections import deque
+    from io import StringIO
+    from types import SimpleNamespace
 
-    class Server:
+    launcher = load_launcher()
+    read_fd, write_fd = os.pipe()
+    data = (
+        "banner\n"
+        + "".join(
+            f"Forwarding HTTP traffic from https://{name}.{domain}\n"
+            for name in ["first", "first", "second"]
+        )
+        + "Port forwarding expired\n"
+    )
+    os.write(write_fd, data.encode())
+    os.close(write_fd)
+    output = deque(maxlen=12)
+    with os.fdopen(read_fd, "rb", buffering=0) as stream:
+        tunnel = SimpleNamespace(stdout=stream, poll=lambda: 0)
+        urls = list(launcher.connection_urls(tunnel, provider, lambda: True, StringIO(), output))
+    assert urls == [f"https://{name}.{domain}" for name in ["first", "first", "second"]]
+    assert "expired" in output[-1]
+
+
+@pytest.fixture
+def supervisor(monkeypatch, tmp_path):
+    import io
+    from types import SimpleNamespace
+
+    launcher = load_launcher()
+    monkeypatch.setattr(launcher, "ROOT", tmp_path)
+    monkeypatch.setattr(launcher.sys, "platform", "linux")
+    clock = SimpleNamespace(now=0)
+    delays = []
+    monkeypatch.setattr(
+        launcher,
+        "time",
+        SimpleNamespace(
+            monotonic=lambda: clock.now,
+            sleep=delays.append,
+        ),
+    )
+    servers, tunnels = [], []
+
+    class Process:
         returncode = None
+
+        def __init__(self):
+            self.stdout = io.BytesIO()
 
         def poll(self):
             return self.returncode
@@ -44,56 +78,79 @@ def test_rotation_in_buffered_output_updates_origin_and_cleans_up(
         def wait(self, **kwargs):
             return self.returncode
 
-    read_fd, write_fd = os.pipe()
-    # All lines arrive in a single chunk, as happens with buffered SSH banners.
-    os.write(
-        write_fd,
-        (
-            "banner\n"
-            + "".join(
-                f"Forwarding HTTP traffic from https://{name}.{domain}\n"
-                for name in ["first", "first", "second"]
-            )
-        ).encode(),
-    )
-    os.close(write_fd)
-
-    class Tunnel(Server):
-        stdout = os.fdopen(read_fd, "rb", buffering=0)
-
-        def poll(self):
-            return 0 if len(servers) == 2 else None
-
-        def wait(self, **kwargs):
-            return 0
-
-    tunnel = Tunnel()
-
     def spawn(argv, **kwargs):
-        if argv[0] == "ssh":
-            # Require the proxy contract explicitly; TLS terminates at the tunnel service.
-            if provider == "localhost-run":
-                assert argv[-2:] == ["--", "--inject-http-proxy-headers"]
-            else:
-                assert argv[-5:] == ["-p", "22", "--", "serveo.net", "--https-only"]
-            return tunnel
-        calls.append(argv)
-        process = Server()
-        servers.append(process)
+        process = Process()
+        (tunnels if argv[0] == "ssh" else servers).append((argv, process))
         return process
 
     monkeypatch.setattr(launcher.subprocess, "Popen", spawn)
-    try:
-        with pytest.raises(SystemExit) as result:
-            launcher.main()
-        assert result.value.code == 1
-        assert [call[call.index("--origin") + 1] for call in calls] == [
-            f"https://first.{domain}",
-            f"https://second.{domain}",
-        ]
-        assert all(server.returncode == 0 for server in servers)
-    finally:
-        tunnel.stdout.close()
+    args = SimpleNamespace(provider="serveo", database_env=tmp_path / ".env", port=19090)
+    return SimpleNamespace(
+        module=launcher,
+        state=tmp_path,
+        args=args,
+        log=io.StringIO(),
+        clock=clock,
+        delays=delays,
+        servers=servers,
+        tunnels=tunnels,
+    )
+
+
+def test_expired_tunnel_reconnects_without_restarting_same_origin_server(supervisor, monkeypatch):
+    import json
+
+    fixture = supervisor
+    sessions = []
+    origins = ["https://same.serveo.net", "https://same.serveo.net", "https://changed.serveo.net"]
+
+    def urls(tunnel, provider, healthy, log, output):
+        assert healthy()
+        index = len(sessions)
+        sessions.append(tunnel)
+        yield origins[index]
+        fixture.clock.now += 61
+        if len(sessions) == len(origins):
+            raise KeyboardInterrupt
+        output.append("Port forwarding expired")
+
+    monkeypatch.setattr(fixture.module, "connection_urls", urls)
+    fixture.module.supervise(fixture.args, fixture.state, fixture.log)
+    assert len(fixture.tunnels) == 3
+    assert len(fixture.servers) == 2
+    assert fixture.delays == [3, 3]
+    assert all(process.returncode == 0 for _, process in fixture.servers + fixture.tunnels)
+    status = json.loads((fixture.state / "status.json").read_text())
+    assert status["phase"] == "stopped"
+    assert status["url"] == origins[-1]
+
+
+def test_repeated_failures_back_off_and_stop(supervisor, monkeypatch):
+    import json
+
+    fixture = supervisor
+    monkeypatch.setattr(fixture.module, "connection_urls", lambda *args: iter(()))
+    with pytest.raises(SystemExit) as result:
+        fixture.module.supervise(fixture.args, fixture.state, fixture.log)
+    assert result.value.code == 1
+    assert len(fixture.tunnels) == 5
+    assert not fixture.servers
+    assert fixture.delays == [6, 12, 24, 30]
+    assert json.loads((fixture.state / "status.json").read_text())["phase"] == "failed"
+
+
+def test_authentication_failure_is_not_retried(supervisor, monkeypatch):
+    fixture = supervisor
+
+    def denied(tunnel, provider, healthy, log, output):
+        output.append("Permission denied (publickey)")
+        return iter(())
+
+    monkeypatch.setattr(fixture.module, "connection_urls", denied)
+    with pytest.raises(SystemExit):
+        fixture.module.supervise(fixture.args, fixture.state, fixture.log)
+    assert len(fixture.tunnels) == 1
+    assert not fixture.delays
 
 
 @pytest.mark.parametrize("provider", ["localhost-run", "serveo"])
