@@ -105,6 +105,9 @@ jobs:
       - run: npm run build
       - run: npm run test:e2e
         timeout-minutes: 5
+      - name: Check compiled frontend through Gunicorn
+        run: npx playwright test --config playwright.preview.config.ts
+        timeout-minutes: 5
       - uses: actions/upload-artifact@v4
         with:
           name: frontend-build-and-lock
