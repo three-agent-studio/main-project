@@ -26,14 +26,18 @@ PUBLIC_URLS = {
 }
 
 
-def tunnel_command(provider, state, port, identity_file=None, hostname=None):
+def tunnel_command(
+    provider, state, port, identity_file=None, hostname=None, verbose=False
+):
+    # Hosted Serveo can finish login via keyboard-interactive after the key offer.
+    # Keep normal method negotiation; do not force publickey-only/BatchMode here.
     remote = (
         ["nokey@localhost.run", "--", "--inject-http-proxy-headers"]
         if provider == "localhost-run"
         # OpenSSH parses options after the host too unless '--' precedes it.
         else [
             "-o",
-            "PreferredAuthentications=publickey"
+            "PreferredAuthentications=publickey,keyboard-interactive"
             if identity_file
             else "PreferredAuthentications=keyboard-interactive",
             "-p",
@@ -46,11 +50,10 @@ def tunnel_command(provider, state, port, identity_file=None, hostname=None):
     forward = f"{hostname}:80:127.0.0.1:{port}" if hostname else f"80:127.0.0.1:{port}"
     return [
         "ssh",
+        *(["-v"] if verbose else []),
         "-T",
         "-o",
-        "BatchMode=yes"
-        if provider == "localhost-run" or identity_file
-        else "BatchMode=no",
+        "BatchMode=yes" if provider == "localhost-run" else "BatchMode=no",
         "-o",
         "StrictHostKeyChecking=accept-new",
         "-o",
@@ -169,7 +172,12 @@ def supervise(args, state, log_file):
             assigned = False
             tunnel = subprocess.Popen(
                 tunnel_command(
-                    args.provider, state, args.port, args.identity_file, args.hostname
+                    args.provider,
+                    state,
+                    args.port,
+                    args.identity_file,
+                    args.hostname,
+                    args.ssh_verbose,
                 ),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
@@ -265,6 +273,11 @@ def main():
     )
     parser.add_argument(
         "--hostname", help="Reserved Serveo hostname from your own console"
+    )
+    parser.add_argument(
+        "--ssh-verbose",
+        action="store_true",
+        help="Save detailed SSH diagnostics in the local tunnel log",
     )
     args = parser.parse_args()
     if args.identity_file and not args.identity_file.is_file():

@@ -87,6 +87,7 @@ def supervisor(monkeypatch, tmp_path):
     args = SimpleNamespace(
         identity_file=None,
         hostname=None,
+        ssh_verbose=False,
         provider="serveo",
         database_env=tmp_path / ".env",
         port=19090,
@@ -205,8 +206,8 @@ def test_reserved_hostname_uses_only_dedicated_public_key(tmp_path):
         timeout=5,
     )
     assert result.returncode == 0, result.stderr
-    assert "batchmode yes" in result.stdout
-    assert "preferredauthentications publickey" in result.stdout
+    assert "batchmode no" in result.stdout
+    assert "preferredauthentications publickey,keyboard-interactive" in result.stdout
     assert f"identityfile {identity}" in result.stdout
 
 
@@ -306,3 +307,13 @@ def test_expiry_message_reconnects_even_when_ssh_stays_alive(monkeypatch):
             )
     finally:
         os.close(write_fd)
+
+
+def test_verbose_diagnostics_reach_the_ssh_process(supervisor, monkeypatch):
+    fixture = supervisor
+    fixture.args.ssh_verbose = True
+    monkeypatch.setattr(fixture.module, "connection_urls", lambda *args: iter(()))
+    with pytest.raises(SystemExit):
+        fixture.module.supervise(fixture.args, fixture.state, fixture.log)
+    assert fixture.tunnels
+    assert all("-v" in command for command, _ in fixture.tunnels)
