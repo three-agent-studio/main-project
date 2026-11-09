@@ -12,6 +12,7 @@ import time
 from collections import deque
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parents[1]
 # Only accept provider-owned hostnames from SSH output, never arbitrary shell commands.
@@ -25,14 +26,16 @@ PUBLIC_URLS = {
 }
 
 
-def tunnel_command(provider, state, port):
+def tunnel_command(provider, state, port, identity_file=None, hostname=None):
     remote = (
         ["nokey@localhost.run", "--", "--inject-http-proxy-headers"]
         if provider == "localhost-run"
         # OpenSSH parses options after the host too unless '--' precedes it.
         else [
             "-o",
-            "PreferredAuthentications=keyboard-interactive",
+            "PreferredAuthentications=publickey"
+            if identity_file
+            else "PreferredAuthentications=keyboard-interactive",
             "-p",
             "22",
             "--",
@@ -40,11 +43,14 @@ def tunnel_command(provider, state, port):
             "--https-only",
         ]
     )
+    forward = f"{hostname}:80:127.0.0.1:{port}" if hostname else f"80:127.0.0.1:{port}"
     return [
         "ssh",
         "-T",
         "-o",
-        "BatchMode=yes" if provider == "localhost-run" else "BatchMode=no",
+        "BatchMode=yes"
+        if provider == "localhost-run" or identity_file
+        else "BatchMode=no",
         "-o",
         "StrictHostKeyChecking=accept-new",
         "-o",
@@ -61,8 +67,9 @@ def tunnel_command(provider, state, port):
         "IdentityAgent=none",
         "-o",
         "IdentitiesOnly=yes",
+        *(["-i", str(identity_file.resolve())] if identity_file else []),
         "-R",
-        f"80:127.0.0.1:{port}",
+        forward,
         *remote,
     ]
 
@@ -157,7 +164,9 @@ def supervise(args, state, log_file):
             log_file.flush()
             assigned = False
             tunnel = subprocess.Popen(
-                tunnel_command(args.provider, state, args.port),
+                tunnel_command(
+                    args.provider, state, args.port, args.identity_file, args.hostname
+                ),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
@@ -169,6 +178,10 @@ def supervise(args, state, log_file):
                     log_file,
                     recent_output,
                 ):
+                    if args.hostname and urlsplit(public_url).hostname != args.hostname:
+                        raise RuntimeError(
+                            "Provider returned a different hostname than the reserved one."
+                        )
                     assigned = True
                     # Preserve the process and its sessions on same-domain reconnects.
                     # A changed host must update both host validation and CSRF together.
@@ -241,7 +254,28 @@ def main():
     parser.add_argument("--database-env", type=Path, default=ROOT / ".env")
     parser.add_argument("--port", type=int, default=19090)
     parser.add_argument("--provider", choices=PUBLIC_URLS, default="localhost-run")
+    parser.add_argument(
+        "--identity-file",
+        type=Path,
+        help="Dedicated SSH private key registered with Serveo",
+    )
+    parser.add_argument(
+        "--hostname", help="Reserved Serveo hostname from your own console"
+    )
     args = parser.parse_args()
+    if args.identity_file and not args.identity_file.is_file():
+        parser.error("SSH identity file does not exist")
+    if args.hostname:
+        args.hostname = args.hostname.lower()
+        if args.provider != "serveo" or not args.identity_file:
+            parser.error(
+                "A reserved hostname requires --provider serveo and --identity-file"
+            )
+        if not re.fullmatch(
+            r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.(?:serveo\.net|serveousercontent\.com)",
+            args.hostname,
+        ):
+            parser.error("Use the reserved Serveo hostname without a scheme or path")
     if not 1024 <= args.port <= 65535:
         parser.error("Use an unprivileged port between 1024 and 65535")
     if not args.database_env.is_file():

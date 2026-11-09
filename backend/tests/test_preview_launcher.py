@@ -84,7 +84,13 @@ def supervisor(monkeypatch, tmp_path):
         return process
 
     monkeypatch.setattr(launcher.subprocess, "Popen", spawn)
-    args = SimpleNamespace(provider="serveo", database_env=tmp_path / ".env", port=19090)
+    args = SimpleNamespace(
+        identity_file=None,
+        hostname=None,
+        provider="serveo",
+        database_env=tmp_path / ".env",
+        port=19090,
+    )
     return SimpleNamespace(
         module=launcher,
         state=tmp_path,
@@ -173,3 +179,84 @@ def test_openssh_parses_actual_command_without_connecting(tmp_path, provider):
     if provider == "serveo":
         assert "batchmode no" in result.stdout
         assert "preferredauthentications keyboard-interactive" in result.stdout
+
+
+def test_reserved_hostname_uses_only_dedicated_public_key(tmp_path):
+    import shutil
+    import subprocess
+
+    if shutil.which("ssh") is None:
+        pytest.skip("OpenSSH is not installed")
+    identity = tmp_path / "dedicated_key"
+    identity.touch(mode=0o600)
+    command = load_launcher().tunnel_command(
+        "serveo",
+        tmp_path,
+        19090,
+        identity,
+        "deanery.serveousercontent.com",
+    )
+    assert command[command.index("-R") + 1] == "deanery.serveousercontent.com:80:127.0.0.1:19090"
+    result = subprocess.run(
+        [command[0], "-G", "-F", os.devnull, *command[1:]],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=5,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "batchmode yes" in result.stdout
+    assert "preferredauthentications publickey" in result.stdout
+    assert f"identityfile {identity}" in result.stdout
+
+
+def test_reserved_hostname_never_silently_switches_to_another_domain(supervisor, monkeypatch):
+    fixture = supervisor
+    fixture.args.hostname = "reserved.serveousercontent.com"
+    fixture.args.identity_file = fixture.state / "dedicated_key"
+    monkeypatch.setattr(
+        fixture.module,
+        "connection_urls",
+        lambda *args: iter(
+            [
+                "https://unexpected.serveousercontent.com",
+            ]
+        ),
+    )
+    with pytest.raises(SystemExit):
+        fixture.module.supervise(fixture.args, fixture.state, fixture.log)
+    assert not fixture.servers
+    assert not fixture.delays
+
+
+@pytest.mark.parametrize(
+    "hostname",
+    [
+        "https://deanery.serveousercontent.com",
+        "deanery.example.org",
+        "deanery.serveousercontent.com/path",
+        "-oProxyCommand=invalid",
+    ],
+)
+def test_reserved_hostname_validation_precedes_network_or_server_start(
+    tmp_path, monkeypatch, hostname
+):
+    launcher = load_launcher()
+    key = tmp_path / "dedicated_key"
+    key.touch(mode=0o600)
+    monkeypatch.setattr(
+        launcher.sys,
+        "argv",
+        [
+            "share_preview",
+            "--provider",
+            "serveo",
+            "--identity-file",
+            str(key),
+            "--hostname",
+            hostname,
+        ],
+    )
+    with pytest.raises(SystemExit) as result:
+        launcher.main()
+    assert result.value.code == 2
