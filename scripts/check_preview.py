@@ -52,12 +52,11 @@ def main():
                     "5",
                     "--max-time",
                     "30",
-                    "--header",
-                    "Accept-Encoding: identity",
+                    "--compressed",
                     "--output",
                     str(body_path),
                     "--write-out",
-                    "%{http_code}\\n%{content_type}\\n%{url_effective}\\n",
+                    "%{http_code}\\n%{content_type}\\n%{url_effective}\\n%{size_download}\\n%{time_total}\\n",
                     base + path,
                 ],
                 check=False,
@@ -67,13 +66,17 @@ def main():
             if result.returncode:
                 item["error"] = result.stderr.strip()
             else:
-                status, content_type, final_url = result.stdout.splitlines()
+                status, content_type, final_url, transferred, elapsed = (
+                    result.stdout.splitlines()
+                )
                 content = body_path.read_bytes()
                 item.update(
                     status=int(status),
                     final_url=final_url,
                     content_type=content_type,
                     received_bytes=len(content),
+                    transferred_bytes=int(float(transferred)),
+                    seconds=float(elapsed),
                     matches_build=hashlib.sha256(content).digest()
                     == hashlib.sha256(expected.read_bytes()).digest(),
                 )

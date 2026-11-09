@@ -106,7 +106,9 @@ jobs:
       - run: npm run test:e2e
         timeout-minutes: 5
       - name: Check compiled frontend through Gunicorn
-        run: npx playwright test --config playwright.preview.config.ts
+        run: |
+          python -m whitenoise.compress --no-brotli --quiet dist
+          npx playwright test --config playwright.preview.config.ts
         timeout-minutes: 5
       - uses: actions/upload-artifact@v4
         with:

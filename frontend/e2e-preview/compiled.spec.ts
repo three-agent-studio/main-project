@@ -12,6 +12,7 @@ test('compiled UI boots through Gunicorn and serves real JavaScript', async ({ p
   const bundle = await page.request.get(modulePath!);
   expect(bundle.status()).toBe(200);
   expect(bundle.headers()['content-type']).toContain('javascript');
+  expect(bundle.headers()['content-encoding']).toBe('gzip');
   expect((await bundle.body()).length).toBeGreaterThan(0);
 
   await page.getByRole('link', { name: 'Мой профиль', exact: true }).click();

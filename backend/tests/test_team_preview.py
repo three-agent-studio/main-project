@@ -74,3 +74,26 @@ def test_proxy_https_header_does_not_cause_redirect_loop(client, preview, settin
     response = client.get("/", HTTP_X_FORWARDED_PROTO="http")
     assert response.status_code == 301
     assert response["Location"] == "https://testserver/"
+
+
+def test_static_gzip_negotiation_preserves_complete_javascript(client, preview, settings, tmp_path):
+    import gzip
+
+    body = b"// synthetic compiled JavaScript\n" * 1000
+    assets = tmp_path / "assets"
+    assets.mkdir()
+    (assets / "compiled.js").write_bytes(body)
+    (assets / "compiled.js.gz").write_bytes(gzip.compress(body))
+    settings.WHITENOISE_ROOT = tmp_path
+    settings.WHITENOISE_AUTOREFRESH = False
+    settings.WHITENOISE_USE_FINDERS = False
+    settings.STATIC_ROOT = tmp_path / "collected"
+    settings.STATIC_ROOT.mkdir()
+    settings.MIDDLEWARE = ["whitenoise.middleware.WhiteNoiseMiddleware", *settings.MIDDLEWARE]
+    response = client.get("/assets/compiled.js", HTTP_ACCEPT_ENCODING="gzip")
+    content = b"".join(response.streaming_content)
+    assert response.status_code == 200
+    assert response["Content-Encoding"] == "gzip"
+    assert "Accept-Encoding" in response["Vary"]
+    assert len(content) < len(body)
+    assert gzip.decompress(content) == body

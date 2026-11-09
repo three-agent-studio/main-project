@@ -75,6 +75,19 @@ def main():
         }
     )
     manage = [sys.executable, str(ROOT / "backend" / "manage.py")]
+    # Vite dist is outside Django staticfiles storage: precompress it explicitly.
+    # WhiteNoise negotiates gzip without changing asset URLs or JavaScript contents.
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "whitenoise.compress",
+            "--no-brotli",
+            "--quiet",
+            str(ROOT / "frontend" / "dist"),
+        ],
+        check=True,
+    )
     if args.migrate:
         subprocess.run([*manage, "migrate", "--noinput"], env=env, check=True)
     subprocess.run([*manage, "migrate", "--check"], env=env, check=True)
