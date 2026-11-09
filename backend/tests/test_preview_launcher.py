@@ -15,13 +15,18 @@ def load_launcher():
     return module
 
 
-def test_rotation_in_buffered_output_updates_origin_and_cleans_up(monkeypatch, tmp_path):
+@pytest.mark.parametrize(
+    "provider,domain", [("localhost-run", "lhr.life"), ("serveo", "serveo.net")]
+)
+def test_rotation_in_buffered_output_updates_origin_and_cleans_up(
+    monkeypatch, tmp_path, provider, domain
+):
     launcher = load_launcher()
     (tmp_path / "frontend/dist").mkdir(parents=True)
     (tmp_path / "frontend/dist/index.html").write_text("compiled")
     (tmp_path / ".env").touch()
     monkeypatch.setattr(launcher, "ROOT", tmp_path)
-    monkeypatch.setattr(launcher.sys, "argv", ["share_preview"])
+    monkeypatch.setattr(launcher.sys, "argv", ["share_preview", "--provider", provider])
     monkeypatch.setattr(launcher.sys, "platform", "linux")
     monkeypatch.setattr(launcher.signal, "signal", lambda *args: None)
     servers = []
@@ -43,7 +48,13 @@ def test_rotation_in_buffered_output_updates_origin_and_cleans_up(monkeypatch, t
     # All lines arrive in a single chunk, as happens with buffered SSH banners.
     os.write(
         write_fd,
-        b"banner\nhttps://first.lhr.life\nhttps://first.lhr.life\nhttps://second.lhr.life\n",
+        (
+            "banner\n"
+            + "".join(
+                f"Forwarding HTTP traffic from https://{name}.{domain}\n"
+                for name in ["first", "first", "second"]
+            )
+        ).encode(),
     )
     os.close(write_fd)
 
@@ -61,7 +72,10 @@ def test_rotation_in_buffered_output_updates_origin_and_cleans_up(monkeypatch, t
     def spawn(argv, **kwargs):
         if argv[0] == "ssh":
             # Require the proxy contract explicitly; TLS terminates at the tunnel service.
-            assert argv[-2:] == ["--", "--inject-http-proxy-headers"]
+            if provider == "localhost-run":
+                assert argv[-2:] == ["--", "--inject-http-proxy-headers"]
+            else:
+                assert argv[-5:] == ["-p", "22", "--", "serveo.net", "--https-only"]
             return tunnel
         calls.append(argv)
         process = Server()
@@ -74,9 +88,31 @@ def test_rotation_in_buffered_output_updates_origin_and_cleans_up(monkeypatch, t
             launcher.main()
         assert result.value.code == 1
         assert [call[call.index("--origin") + 1] for call in calls] == [
-            "https://first.lhr.life",
-            "https://second.lhr.life",
+            f"https://first.{domain}",
+            f"https://second.{domain}",
         ]
         assert all(server.returncode == 0 for server in servers)
     finally:
         tunnel.stdout.close()
+
+
+@pytest.mark.parametrize("provider", ["localhost-run", "serveo"])
+def test_openssh_parses_actual_command_without_connecting(tmp_path, provider):
+    import shutil
+    import subprocess
+
+    if shutil.which("ssh") is None:
+        pytest.skip("OpenSSH is not installed")
+    command = load_launcher().tunnel_command(provider, tmp_path, 19090)
+    # -G prints configuration without a connection; -F disables user config/Match exec.
+    result = subprocess.run(
+        [command[0], "-G", "-F", os.devnull, *command[1:]],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=5,
+    )
+    assert result.returncode == 0, result.stderr
+    if provider == "serveo":
+        assert "batchmode no" in result.stdout
+        assert "preferredauthentications keyboard-interactive" in result.stdout

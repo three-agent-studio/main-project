@@ -82,18 +82,20 @@ def test_static_gzip_negotiation_preserves_complete_javascript(client, preview, 
     body = b"// synthetic compiled JavaScript\n" * 1000
     assets = tmp_path / "assets"
     assets.mkdir()
-    (assets / "compiled.js").write_bytes(body)
-    (assets / "compiled.js.gz").write_bytes(gzip.compress(body))
+    (assets / "compiled-1234abcd.js").write_bytes(body)
+    (assets / "compiled-1234abcd.js.gz").write_bytes(gzip.compress(body))
+    settings.WHITENOISE_IMMUTABLE_FILE_TEST = r"^/assets/[^/]+-[A-Za-z0-9_-]{8}\.(?:js|css)$"
     settings.WHITENOISE_ROOT = tmp_path
     settings.WHITENOISE_AUTOREFRESH = False
     settings.WHITENOISE_USE_FINDERS = False
     settings.STATIC_ROOT = tmp_path / "collected"
     settings.STATIC_ROOT.mkdir()
     settings.MIDDLEWARE = ["whitenoise.middleware.WhiteNoiseMiddleware", *settings.MIDDLEWARE]
-    response = client.get("/assets/compiled.js", HTTP_ACCEPT_ENCODING="gzip")
+    response = client.get("/assets/compiled-1234abcd.js", HTTP_ACCEPT_ENCODING="gzip")
     content = b"".join(response.streaming_content)
     assert response.status_code == 200
     assert response["Content-Encoding"] == "gzip"
+    assert "immutable" in response["Cache-Control"]
     assert "Accept-Encoding" in response["Vary"]
     assert len(content) < len(body)
     assert gzip.decompress(content) == body

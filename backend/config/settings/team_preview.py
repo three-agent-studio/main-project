@@ -17,6 +17,9 @@ WHITENOISE_ROOT = FRONTEND_DIST
 WHITENOISE_AUTOREFRESH = False
 WHITENOISE_USE_FINDERS = False
 WHITENOISE_ALLOW_ALL_ORIGINS = False
+# Vite hashes include letters, numbers, '_' and '-'; Django's default hash matcher
+# does not recognize them. Only hashed assets are immutable; HTML stays no-store.
+WHITENOISE_IMMUTABLE_FILE_TEST = r"^/assets/[^/]+-[A-Za-z0-9_-]{8}\.(?:js|css)$"
 # Temporary service-owned hostnames must not receive a year-long HSTS policy.
 SECURE_HSTS_SECONDS = 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
