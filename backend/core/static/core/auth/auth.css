@@ -76,8 +76,8 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
 .feature-list li { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .feature-icon { display: grid; place-items: center; width: 33px; height: 33px; flex: 0 0 33px; color: #5574c6; background: #ffffff91; border: 1px solid #ffffffa1; border-radius: 10px; }
 .feature-icon svg { width: 18px; height: 18px; stroke-width: 1.6; }
-.feature-list strong { display: block; color: #344b73; font-size: 11px; font-weight: 600; }
-.feature-list div > span { display: block; margin-top: 5px; color: #637594; font-size: 9px; line-height: 1.4; }
+.feature-list strong { display: block; color: #344b73; font-size: 12px; font-weight: 600; }
+.feature-list div > span { display: block; margin-top: 5px; color: #536582; font-size: 10px; line-height: 1.4; }
 
 /* Form panel. Keep targets >=44px and text inputs >=16px for mobile Safari. */
 .login-panel { display: flex; flex-direction: column; align-items: center; padding: 36px 48px 30px; min-width: 0; }
@@ -90,10 +90,10 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
 .login-content h1 { font-size: 32px; line-height: 1.2; letter-spacing: -1px; margin: 20px 0 12px; font-weight: 700; }
 .login-description { color: var(--muted); font-size: 13px; line-height: 1.75; margin: 0 0 31px; }
 .form-field { margin-bottom: 21px; }
-.form-field > label { display: block; margin-bottom: 9px; font-size: 12px; font-weight: 600; }
+.form-field > label { display: block; margin-bottom: 9px; font-size: 13px; font-weight: 600; }
 .input-wrap { position: relative; }
 .input-wrap > input { display: block; width: 100%; height: 51px; padding: 12px 45px; border: 1px solid var(--line); border-radius: 10px; background: #fcfdff; color: var(--ink); font-size: 16px; transition: border-color .15s, box-shadow .15s; }
-.input-wrap > input::placeholder { color: #7b879b; font-size: 13px; }
+.input-wrap > input::placeholder { color: var(--muted); font-size: 13px; }
 .input-wrap > input:hover { border-color: #a9b9d5; }
 .input-wrap > input:focus { outline: none; border-color: #5275e4; background: white; box-shadow: 0 0 0 3px #315ce714; }
 .input-wrap > input[aria-invalid="true"] { border-color: #be4b58; }
@@ -105,11 +105,11 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
 .eye-slash { display: none; }
 .password-toggle[aria-pressed="true"] .eye-slash { display: initial; }
 .form-options { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: -6px; }
-.remember-option { display: flex; align-items: center; min-height: 44px; gap: 8px; cursor: pointer; color: #4e5c74; font-size: 11px; }
+.remember-option { display: flex; align-items: center; min-height: 44px; gap: 8px; cursor: pointer; color: #4e5c74; font-size: 12px; }
 .remember-option input { width: 16px; height: 16px; margin: 0; accent-color: var(--blue); cursor: pointer; }
-.help-link { display: inline-flex; align-items: center; min-height: 44px; font-size: 11px; font-weight: 500; text-decoration: none; }
+.help-link { display: inline-flex; align-items: center; min-height: 44px; font-size: 12px; font-weight: 500; text-decoration: none; }
 .help-link:hover { text-decoration: underline; }
-.remember-hint { font-size: 10px; color: var(--muted); margin: -2px 0 22px; }
+.remember-hint { font-size: 11px; color: var(--muted); margin: -2px 0 22px; }
 .submit-button { display: flex; align-items: center; justify-content: center; gap: 13px; width: 100%; min-height: 51px; padding: 13px 18px; background: var(--blue); color: white; border: 1px solid transparent; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; box-shadow: 0 5px 12px #315ce71c; transition: background .15s, box-shadow .15s, transform .15s; }
 .submit-button:hover { background: var(--blue-hover); box-shadow: 0 6px 16px #315ce72b; transform: translateY(-1px); }
 .submit-button:active { transform: translateY(0); }
@@ -117,12 +117,12 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
 .submit-arrow { font-size: 19px; font-weight: 400; }
 .access-help { display: flex; align-items: flex-start; gap: 11px; margin-top: 27px; padding: 18px 0 0; border-top: 1px solid #edf0f6; scroll-margin-top: 24px; border-radius: 2px; }
 .help-icon { display: grid; place-items: center; width: 18px; height: 18px; flex: 0 0 18px; border: 1px solid #b6c2d8; border-radius: 50%; color: #6c7f9f; font-size: 11px; margin-top: 1px; }
-.access-help h2 { margin: 0 0 6px; font-size: 11px; font-weight: 600; color: #53627a; }
-.access-help p { font-size: 10px; line-height: 1.7; color: var(--muted); margin: 0; }
+.access-help h2 { margin: 0 0 6px; font-size: 12px; font-weight: 600; color: #53627a; }
+.access-help p { font-size: 11px; line-height: 1.7; color: var(--muted); margin: 0; }
 .access-help:target { background: #f5f8ff; outline: 2px solid #d6e1fc; outline-offset: 8px; }
-.panel-footer { display: flex; align-items: center; justify-content: center; gap: 6px; color: #6f7f97; font-size: 10px; margin: 0; line-height: 1.6; }
+.panel-footer { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); font-size: 10px; margin: 0; line-height: 1.6; }
 .panel-footer svg { width: 14px; height: 14px; stroke-width: 1.6; }
-.prototype-note { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 20px 0 0; font-size: 10px; line-height: 1.7; color: #6b7990; }
+.prototype-note { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 20px 0 0; font-size: 10px; line-height: 1.7; color: var(--muted); }
 .prototype-badge { padding: 2px 7px; border: 1px solid #dce3ee; border-radius: 5px; white-space: nowrap; color: #617089; }
 .form-error { padding: 13px 15px; margin-bottom: 24px; background: #fff3f3; color: #a02e40; border: 1px solid #efd0d7; border-radius: 10px; font-size: 12px; line-height: 1.65; }
 .form-error p { margin: 4px 0 0; }
@@ -162,7 +162,7 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
   .story h2 > span::before { content: " "; }
   .story-heading p { font-size: 12px; }
   .feature-list { gap: 19px 10px; }
-  .feature-list div > span { font-size: 9px; }
+  .feature-list div > span { font-size: 10px; }
   .prototype-note { flex-direction: column; gap: 8px; text-align: center; max-width: 340px; margin: 20px auto 0; }
 }
 @media (max-width: 380px) {
@@ -171,7 +171,7 @@ svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width:
   .story { padding: 24px 21px; }
   .form-options { gap: 8px; }
   .feature-list { column-gap: 8px; }
-  .feature-list div > span { font-size: 9px; }
+  .feature-list div > span { font-size: 10px; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; }
