@@ -230,14 +230,20 @@ def supervise(args, state, log_file):
                 raise RuntimeError(
                     f"SSH configuration/authentication error:\n{details}"
                 )
-            # A normal long-lived session expiring is recoverable. Repeated rapid
-            # failures have bounded exponential backoff; never spin on a broken setup.
+            # DNS/network outages may outlast a few attempts (sleep, Wi-Fi changes).
+            # Retry transient failures by default; credentials/host-key errors above
+            # remain fatal. A caller can opt into a finite retry limit.
             failures = (
                 0 if assigned and time.monotonic() - started >= 60 else failures + 1
             )
-            if failures >= 5:
-                raise RuntimeError(f"SSH failed 5 consecutive times:\n{details}")
-            delay = min(3 * 2**failures, 30)
+            if (
+                args.max_connection_failures
+                and failures >= args.max_connection_failures
+            ):
+                raise RuntimeError(
+                    f"SSH failed {args.max_connection_failures} consecutive times:\n{details}"
+                )
+            delay = min(3 * 2 ** min(failures, 4), 30)
             write_status(state, "reconnecting", origin)
             log_file.write(
                 f"\n[{datetime.now(UTC).isoformat()}] Reconnecting in {delay}s\n"
@@ -279,7 +285,15 @@ def main():
         action="store_true",
         help="Save detailed SSH diagnostics in the local tunnel log",
     )
+    parser.add_argument(
+        "--max-connection-failures",
+        type=int,
+        default=0,
+        help="Transient SSH failures before stopping; 0 retries until Ctrl+C (default)",
+    )
     args = parser.parse_args()
+    if args.max_connection_failures < 0:
+        parser.error("--max-connection-failures must be zero or positive")
     if args.identity_file and not args.identity_file.is_file():
         parser.error("SSH identity file does not exist")
     if args.hostname:

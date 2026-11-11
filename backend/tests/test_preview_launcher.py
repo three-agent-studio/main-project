@@ -88,6 +88,7 @@ def supervisor(monkeypatch, tmp_path):
         identity_file=None,
         hostname=None,
         ssh_verbose=False,
+        max_connection_failures=5,
         provider="serveo",
         database_env=tmp_path / ".env",
         port=19090,
@@ -317,3 +318,30 @@ def test_verbose_diagnostics_reach_the_ssh_process(supervisor, monkeypatch):
         fixture.module.supervise(fixture.args, fixture.state, fixture.log)
     assert fixture.tunnels
     assert all("-v" in command for command, _ in fixture.tunnels)
+
+
+def test_extended_network_outage_recovers_without_stopping_the_server(supervisor, monkeypatch):
+    fixture = supervisor
+    fixture.args.max_connection_failures = 0
+    sessions = []
+    origin = "https://reserved.serveousercontent.com"
+
+    def urls(tunnel, provider, healthy, log, output):
+        session = len(sessions)
+        sessions.append(tunnel)
+        assert healthy()
+        if session == 0:
+            yield origin
+            fixture.clock.now += 61
+        elif session <= 7:
+            assert fixture.servers[0][1].poll() is None
+            output.append("ssh: Could not resolve hostname serveo.net")
+        else:
+            yield origin
+            raise KeyboardInterrupt
+
+    monkeypatch.setattr(fixture.module, "connection_urls", urls)
+    fixture.module.supervise(fixture.args, fixture.state, fixture.log)
+    assert len(fixture.tunnels) == 9
+    assert len(fixture.servers) == 1
+    assert fixture.delays == [3, 6, 12, 24, 30, 30, 30, 30]
