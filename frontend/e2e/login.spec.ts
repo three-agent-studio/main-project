@@ -11,7 +11,7 @@ test('login is responsive, keyboard accessible and has a working password toggle
   await toggle.focus();
   await page.keyboard.press('Space');
   await expect(password).toHaveAttribute('type', 'text');
-  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Скрыть пароль' })).toHaveAttribute('aria-pressed', 'true');
   await expect(password).toHaveValue('synthetic-toggle-only');
   await page.getByRole('button', { name: 'Скрыть пароль' }).click();
   await expect(password).toHaveAttribute('type', 'password');
