@@ -33,8 +33,9 @@ export default function ProfilePage() {
         method: 'POST', credentials: 'same-origin', headers: { 'X-CSRFToken': csrfToken },
       });
       if (!response.ok) throw new Error('Logout failed');
-      // Full navigation drops all in-memory private state after the server invalidates the session.
-      window.location.replace('/');
+      // Django owns the destination after logout. A full navigation also drops
+      // private React state instead of reopening the old public home screen.
+      window.location.replace(response.url);
     } catch { setLogoutError(true); }
   }
 
