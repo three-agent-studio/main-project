@@ -11,9 +11,19 @@ test('student can sign in, read own profile, and sign out', async ({ page }) => 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: `test-results/profile-${test.info().project.name}.png`, fullPage: true });
   await page.getByRole('button', { name: 'Выйти', exact: true }).click();
-  await expect(page).toHaveURL('/');
+  await expect(page).toHaveURL('/auth/login/');
+  await expect(page.getByRole('heading', { name: 'Вход в кабинет', exact: true })).toBeVisible();
+  await expect(page.getByText('С возвращением', { exact: false })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Показать пароль' })).toBeVisible();
+  expect((await page.request.get('/api/v1/me/')).status()).toBe(403);
+  await page.screenshot({ path: `test-results/after-logout-${test.info().project.name}.png`, fullPage: true });
   await page.goto('/profile');
   await expect(page.getByRole('link', { name: 'Войти в кабинет' })).toBeVisible();
+  await page.getByRole('link', { name: 'Войти в кабинет' }).click();
+  await page.getByLabel('Логин', { exact: true }).fill('browser_student');
+  await page.getByLabel('Пароль', { exact: true }).fill('ephemeral-browser-test-only');
+  await page.getByRole('button', { name: 'Войти', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Демонстрационный студент' })).toBeVisible();
 });
 
 test('two student sessions remain isolated and cannot assign privileges', async ({ browser, baseURL, viewport, userAgent, isMobile, hasTouch, deviceScaleFactor }) => {

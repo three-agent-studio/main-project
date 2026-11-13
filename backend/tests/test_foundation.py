@@ -70,6 +70,10 @@ def test_login_logout_csrf_and_password_hashing(students):
         "csrfmiddlewaretoken": client.cookies["csrftoken"].value,
     })
     assert response.status_code == 302
+    assert response["Location"] == "/auth/login/"
+    login_page = client.get(response["Location"])
+    assert login_page.status_code == 200
+    assert "С возвращением" in login_page.content.decode()
     assert client.get(reverse("me")).status_code == 403
 
 
