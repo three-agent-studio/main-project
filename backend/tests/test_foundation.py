@@ -43,7 +43,7 @@ def test_me_requires_authentication(client):
 
 def test_students_only_get_their_profile(client, students):
     for user in students:
-        client.force_login(user)
+        client.force_login(user, backend="django.contrib.auth.backends.ModelBackend")
         response = client.get(reverse("me"), {"user_id": students[1].pk})
         assert response.json()["id"] == user.pk
         assert response.json()["student_profile"]["full_name"] == user.username

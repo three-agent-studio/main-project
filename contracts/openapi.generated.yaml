@@ -36,10 +36,38 @@ components:
           - $ref: '#/components/schemas/StudentProfile'
           readOnly: true
           nullable: true
+        staff_profile:
+          allOf:
+          - $ref: '#/components/schemas/StaffProfile'
+          readOnly: true
+          nullable: true
+        roles:
+          type: array
+          items:
+            type: string
+          readOnly: true
       required:
       - id
+      - roles
+      - staff_profile
       - student_profile
       - username
+    StaffProfile:
+      type: object
+      properties:
+        full_name:
+          type: string
+          readOnly: true
+        faculty:
+          type: string
+          readOnly: true
+        faculty_id:
+          type: integer
+          readOnly: true
+      required:
+      - faculty
+      - faculty_id
+      - full_name
     StudentProfile:
       type: object
       properties:
