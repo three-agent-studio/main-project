@@ -1,8 +1,58 @@
-/* Shared design vocabulary. Feature owners should not hard-code competing palettes. */
+/* Shared design vocabulary. Feature owners should not hard-code competing palettes.
+   Direction: violet "ink" (the colour of school ink) for text and actions, a yellow
+   highlighter for "what matters now", and squared exercise-book paper as texture.
+   Keep auth.css (Django login) in sync with these values; it cannot import this file. */
 :root {
- --background:#f4f6fb; --surface:#fff; --text:#17243c; --muted:#52617a;
- --primary:#244bc4; --primary-soft:#e8edff; --border:#dce2ee; --danger:#a32424;
- --radius:12px; --space-2:8px; --space-4:16px; --space-6:24px; --space-8:32px;
- font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
- color:var(--text); background:var(--background); font-synthesis:none;
+  /* Colour */
+  --ink: #2b2350;            /* headings, body text */
+  --ink-soft: #5d5578;       /* secondary text, 7.0:1 on white */
+  --primary: #5232c2;        /* actions, links, focus; white text 7.6:1 */
+  --primary-hover: #42259f;
+  --primary-soft: #efebff;   /* selected nav, quiet fills */
+  --marker: #ffd34d;         /* highlighter: current item, signature stripe */
+  --marker-soft: #fff4cc;
+  --paper: #f7f5fc;          /* page background */
+  --paper-grid: #efebf8;     /* exercise-book squares */
+  --surface: #fff;
+  --line: #e2dcef;
+  --line-strong: #c9c0e0;     /* decorative borders only */
+  --line-control: #8b82a9;    /* borders of inputs and buttons, 3.6:1 (WCAG 1.4.11) */
+  --success: #24704f;
+  --success-soft: #e5f4ec;
+  --danger: #a3242f;
+  --danger-soft: #fdecee;
+
+  /* Legacy aliases used by existing feature code. */
+  --background: var(--paper);
+  --text: var(--ink);
+  --muted: var(--ink-soft);
+  --border: var(--line);
+
+  /* Type: one family, hierarchy through size and weight. */
+  --font: "Onest Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --text-sm: .875rem;
+  --text-base: 1rem;
+  --text-lg: 1.1875rem;
+  --text-xl: clamp(1.5rem, 1.2rem + 1.2vw, 1.875rem);
+  --text-2xl: clamp(1.875rem, 1.4rem + 2.2vw, 2.75rem);
+
+  /* Shape: radius grows with the size of the surface, not one value everywhere. */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* Space */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
+  --space-6: 24px; --space-8: 32px; --space-12: 48px;
+
+  /* Layout */
+  --content-max: 1120px;
+  --tabbar-height: 64px;
+
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--paper);
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
 }

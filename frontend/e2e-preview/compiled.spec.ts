@@ -6,7 +6,8 @@ test('compiled UI boots through Gunicorn and serves real JavaScript', async ({ p
   page.on('requestfailed', request => errors.push(`${new URL(request.url()).pathname}: ${request.failure()?.errorText}`));
 
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Ваш цифровой деканат', exact: true })).toBeVisible();
+  // The greeting depends on the time of day, so match any of its variants.
+  await expect(page.getByRole('heading', { level: 1, name: /^(Доброе утро|Добрый день|Добрый вечер|Доброй ночи)/ })).toBeVisible();
   const modulePath = await page.locator('script[type="module"]').getAttribute('src');
   expect(modulePath).toMatch(/^\/assets\/.+\.js$/);
   const bundle = await page.request.get(modulePath!);

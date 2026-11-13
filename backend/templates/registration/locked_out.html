@@ -1,9 +1,8 @@
 {% extends 'registration/auth_base.html' %}
 {% block title %}Вход временно ограничен — Цифровой деканат{% endblock %}
 {% block content %}
-  <span class="welcome-label">Безопасность аккаунта</span>
   <h1 id="login-title">Вход временно ограничен</h1>
   <div class="form-error lockout-error" role="alert"><p>Слишком много неудачных попыток. Повторите вход через 15 минут.</p></div>
   <p class="login-description">Это помогает защитить ваш аккаунт. Если вы забыли пароль, обратитесь к команде проекта для восстановления доступа.</p>
-  <a class="submit-button" href="/auth/login/">Вернуться к форме входа <span aria-hidden="true">→</span></a>
+  <a class="submit-button" href="/auth/login/">Вернуться к форме входа</a>
 {% endblock %}

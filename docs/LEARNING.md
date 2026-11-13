@@ -44,6 +44,16 @@
 - Правило: на другом устройстве открывать LAN-IP Mac, запускать frontend через dev:lan и явно разрешать этот IP в Django development settings. Backend можно оставить на loopback за Vite proxy.
 - Подтверждение: адрес предоставлен пользователем; исходные package.json и ALLOWED_HOSTS проверены. Физический iPhone ещё требует повторной проверки с верным адресом.
 
+### 2026-11-13 — Просмотр интерфейса на Windows без Docker
+- Контекст: у №3 Windows без Docker и PostgreSQL, а для редизайна нужно видеть вход, главную и профиль с данными.
+- Правило: держать отдельный settings-модуль вне репозитория (`from config.settings.development import *` + SQLite-файл), подключать через `PYTHONPATH` и `DJANGO_SETTINGS_MODULE`, выполнить `migrate` и `tests/seed_browser.py`, затем `runserver` + `npm run dev`. В репозиторий не коммитить, production по-прежнему только PostgreSQL. На Windows 5 тестов `test_preview_launcher.py` падают и без изменений (ssh/`nul`/select); это не регрессия.
+- Подтверждение: ветка `design/warm-ui`; вход, главная и профиль проверены на 360 и 1280 px; остальные 62 backend-теста проходят.
+
+### 2026-11-13 — Дизайн-токены живут в двух местах
+- Контекст: страница входа рендерится Django и не может импортировать `frontend/src/shared/styles/tokens.css`.
+- Правило: при смене палитры или шрифта менять и `tokens.css`, и `:root` в `backend/core/static/core/auth/auth.css`. Шрифт Onest хранится в проекте (npm `@fontsource-variable/onest` для React, копия woff2 + `OFL.txt` в `core/static/core/fonts/` для входа), без внешних CDN. Цвета рамок полей и кнопок — `--line-control` (≥3:1), а `--line-strong` только декоративный.
+- Подтверждение: расчёт контраста WCAG для всех пар палитры в ветке `design/warm-ui`.
+
 ## Непроверенные идеи
 
 _Необязательный раздел. Такие заметки не являются обязательными инструкциями. Перед применением их нужно проверить._

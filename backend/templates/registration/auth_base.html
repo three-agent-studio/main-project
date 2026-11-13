@@ -17,8 +17,7 @@
       <section class="story" aria-labelledby="story-title">
         <div class="desktop-brand">{% include 'registration/includes/brand.html' %}</div>
         <div class="story-heading">
-          <span class="eyebrow"><span class="status-dot"></span> Ближе к учёбе. Больше для себя.</span>
-          <h2 id="story-title">Всё об учёбе.<br><span>В одном месте.</span></h2>
+          <h2 id="story-title">Всё об учёбе<br> в одном месте</h2>
           <p>Меньше поисков и лишних вкладок.<br class="desktop-break"> Больше времени на то, что важно вам.</p>
         </div>
 
@@ -26,12 +25,12 @@
         <div class="workspace-preview" aria-hidden="true">
           <div class="preview-topbar"><span class="preview-symbol">д.</span><span>Мой кабинет</span><span class="preview-avatar">АС</span></div>
           <div class="preview-body">
-            <div class="preview-title"><div><span class="preview-overline">ВАШ УЧЕБНЫЙ ДЕНЬ</span><h3>Всё по плану <span>✦</span></h3></div><span class="preview-date">Пн, 9 ноября</span></div>
+            <div class="preview-title"><h3>Сегодня две пары</h3><span class="preview-date">понедельник, 9 ноября</span></div>
             <div class="preview-week"><span class="selected">ПН<b>9</b></span><span>ВТ<b>10</b></span><span>СР<b>11</b></span><span>ЧТ<b>12</b></span><span>ПТ<b>13</b></span></div>
-            <div class="preview-lesson"><span class="lesson-time">09:00<span>10:30</span></span><div><strong>Проектирование интерфейсов</strong><span>Практика · Аудитория 304</span></div><span class="lesson-mark"></span></div>
-            <div class="preview-bottom"><span><span class="small-check">✓</span> Всё под рукой</span><span class="preview-tag">Ваш ритм учёбы</span></div>
+            <div class="preview-lesson"><span class="lesson-time">09:00<span>10:30</span></span><div><strong>Проектирование интерфейсов</strong><span>Практика, аудитория 304</span></div></div>
+            <div class="preview-lesson is-moved"><span class="lesson-time">12:40<span>14:10</span></span><div><strong>Базы данных</strong><span>Перенесено в аудиторию 118</span></div></div>
           </div>
-          <div class="preview-notice"><span class="notice-icon">✓</span><div><strong>Отличный результат!</strong><span>Новый зачёт — в вашей успеваемости</span></div></div>
+          <div class="preview-notice"><span class="notice-icon"><svg viewBox="0 0 24 24"><path d="m6 12.5 4 4 8-9"/></svg></span><div><strong>Справка готова</strong><span>Заберите в деканате, окно 3</span></div></div>
         </div>
 
         <ul class="feature-list" aria-label="Возможности цифрового деканата">
@@ -43,7 +42,7 @@
       </section>
 
       <section class="login-panel" id="login-content" tabindex="-1" aria-labelledby="login-title">
-        <a class="back-link" href="/"><span aria-hidden="true">←</span> На главную</a>
+        <a class="back-link" href="/"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6-6 6 6 6"/></svg>На главную</a>
         <div class="login-content">{% block content %}{% endblock %}</div>
         <p class="panel-footer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg> Личный доступ. Только ваши данные.</p>
       </section>

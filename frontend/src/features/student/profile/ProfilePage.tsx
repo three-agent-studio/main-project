@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../../../shared/api/client';
+import { displayName, initials, type Me } from '../../../shared/api/session';
 import { Card } from '../../../shared/ui/Card';
 import { Page } from '../../../shared/ui/Page';
+import styles from './ProfilePage.module.css';
 
-interface Me {
-  id: number;
-  username: string;
-  student_profile: null | { full_name: string; group: string; faculty: string; programme: string; course: number };
-}
 type State = { kind: 'loading' } | { kind: 'ready'; user: Me } | { kind: 'anonymous' } | { kind: 'error' };
 
 export default function ProfilePage() {
@@ -40,17 +37,40 @@ export default function ProfilePage() {
   }
 
   return <Page title="Мой профиль">
-    {state.kind === 'loading' && <p role="status">Загрузка профиля…</p>}
-    {state.kind === 'anonymous' && <Card title="Необходимо войти"><a className="button" href="/auth/login/?next=/profile">Войти в кабинет</a></Card>}
-    {state.kind === 'error' && <><p role="alert">Не удалось загрузить профиль.</p><button onClick={() => { setState({ kind: 'loading' }); setAttempt(attempt + 1); }}>Повторить</button></>}
+    {state.kind === 'loading' && <p role="status" className="notice">Загружаем профиль…</p>}
+    {state.kind === 'anonymous' && <Card title="Войдите, чтобы увидеть профиль">
+      <p>Профиль доступен только владельцу учётной записи.</p>
+      <a className="button" href="/auth/login/?next=/profile">Войти в кабинет</a>
+    </Card>}
+    {state.kind === 'error' && <div className={styles.error}>
+      <p role="alert" className="notice notice-error">Не удалось загрузить профиль. Проверьте интернет и попробуйте ещё раз.</p>
+      <button onClick={() => { setState({ kind: 'loading' }); setAttempt(attempt + 1); }}>Повторить</button>
+    </div>}
     {state.kind === 'ready' && <>
-      <Card title={state.user.student_profile?.full_name ?? state.user.username}>
-        {state.user.student_profile ? <dl>
-          {Object.entries({ Факультет: state.user.student_profile.faculty, Направление: state.user.student_profile.programme, Курс: state.user.student_profile.course, Группа: state.user.student_profile.group }).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
-        </dl> : <p>Для этой учётной записи профиль студента ещё не создан.</p>}
-      </Card>
-      {logoutError && <p role="alert">Не удалось выйти. Повторите попытку.</p>}
-      <button onClick={logout}>Выйти</button>
+      <ProfileCard user={state.user} />
+      {logoutError && <p role="alert" className="notice notice-error">Не удалось выйти. Повторите попытку.</p>}
+      <button className="button-secondary" onClick={logout}>Выйти</button>
     </>}
   </Page>;
+}
+
+/** The student card: the one bold element of the cabinet, modelled on a student ID. */
+function ProfileCard({ user }: { user: Me }) {
+  const name = displayName(user);
+  const profile = user.student_profile;
+  return <article className={styles.card} aria-labelledby="profile-name">
+    <div className={styles.cardTop}>
+      <span className={styles.avatar} aria-hidden="true">{initials(name)}</span>
+      <div className={styles.identity}>
+        <h2 id="profile-name">{name}</h2>
+        {profile && <p className={styles.group}>группа <span>{profile.group}</span></p>}
+      </div>
+    </div>
+    {profile
+      ? <dl className={styles.details}>
+        {Object.entries({ Факультет: profile.faculty, Направление: profile.programme, Курс: profile.course })
+          .map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+      </dl>
+      : <p className={styles.empty}>Для этой учётной записи ещё нет профиля студента. Его создаёт сотрудник деканата.</p>}
+  </article>;
 }

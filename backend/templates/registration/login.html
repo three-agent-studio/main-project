@@ -1,8 +1,7 @@
 {% extends 'registration/auth_base.html' %}
 {% block content %}
-  <span class="welcome-label"><span aria-hidden="true">✦</span> С возвращением</span>
   <h1 id="login-title">Вход в кабинет</h1>
-  <p class="login-description">Ваше расписание, результаты и важные<br class="desktop-break"> новости уже ждут вас.</p>
+  <p class="login-description">С возвращением! Расписание, оценки и новости<br class="desktop-break"> деканата уже ждут вас.</p>
 
   {# Submit directly to Django: CSRF, Axes and validated `next` stay server-owned. #}
   <form method="post" class="login-form" data-login-form>
@@ -38,12 +37,12 @@
     </div>
     <p id="remember-hint" class="remember-hint">На личном устройстве — вход на 8 часов.</p>
     <input type="hidden" name="next" value="{{ next }}">
-    <button class="submit-button" type="submit" data-submit-button><span data-submit-label>Войти</span><span class="submit-arrow" aria-hidden="true">→</span></button>
+    <button class="submit-button" type="submit" data-submit-button><span data-submit-label>Войти</span></button>
     <p class="sr-only" role="status" aria-live="polite" data-submit-status></p>
   </form>
 
   <section class="access-help" id="access-help" tabindex="-1" aria-labelledby="access-help-title">
-    <span class="help-icon" aria-hidden="true">?</span>
+    <span class="help-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.3a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.1-2.4 3.6M12 17.2v.1"/></svg></span>
     <div><h2 id="access-help-title">Нужна помощь со входом?</h2><p>Для получения тестового аккаунта или восстановления доступа обратитесь к команде проекта.</p></div>
   </section>
 {% endblock %}
