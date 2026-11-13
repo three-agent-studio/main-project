@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install -r requirements-dev.txt
-      - run: ruff check .
+      - run: ruff check . ../scripts
       - run: python manage.py check
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py migrate --noinput
@@ -88,12 +88,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - name: Prepare isolated Python environment
         run: |
-          "$pythonLocation/bin/python" -m venv /tmp/deanery-python
+          # Match Python/OpenSSL to this Ubuntu container, not the host runner's toolcache.
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends python3-venv ca-certificates
+          /usr/bin/python3 -m venv /tmp/deanery-python
+          /tmp/deanery-python/bin/python -c "import ssl; print(ssl.OPENSSL_VERSION)"
           echo /tmp/deanery-python/bin >> "$GITHUB_PATH"
       - run: python -m pip install -r ../backend/requirements.txt
       - run: python ../backend/manage.py migrate --noinput
@@ -104,6 +105,11 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run test:e2e
+        timeout-minutes: 5
+      - name: Check compiled frontend through Gunicorn
+        run: |
+          python -m whitenoise.compress --no-brotli --quiet dist
+          npx playwright test --config playwright.preview.config.ts
         timeout-minutes: 5
       - uses: actions/upload-artifact@v4
         with:
