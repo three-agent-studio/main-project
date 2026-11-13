@@ -1,0 +1,71 @@
+openapi: 3.0.3
+info:
+  title: Цифровой деканат API
+  version: 1.0.0
+paths:
+  /api/v1/me/:
+    get:
+      operationId: me_retrieve
+      tags:
+      - me
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+components:
+  schemas:
+    Me:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          title: Имя пользователя
+          description: Обязательное поле. Не более 150 символов. Только буквы, цифры
+            и символы @/./+/-/_.
+        student_profile:
+          allOf:
+          - $ref: '#/components/schemas/StudentProfile'
+          readOnly: true
+          nullable: true
+      required:
+      - id
+      - student_profile
+      - username
+    StudentProfile:
+      type: object
+      properties:
+        full_name:
+          type: string
+          readOnly: true
+        group:
+          type: string
+          readOnly: true
+        faculty:
+          type: string
+          readOnly: true
+        programme:
+          type: string
+          readOnly: true
+        course:
+          type: integer
+          readOnly: true
+      required:
+      - course
+      - faculty
+      - full_name
+      - group
+      - programme
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
