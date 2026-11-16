@@ -3,6 +3,62 @@ info:
   title: Цифровой деканат API
   version: 1.0.0
 paths:
+  /api/v1/lessons/:
+    get:
+      operationId: lessons_list
+      description: Расписание своей группы; по умолчанию текущая неделя в часовом
+        поясе вуза.
+      parameters:
+      - in: query
+        name: from
+        schema:
+          type: string
+          format: date
+        description: Первый день включительно
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: to
+        schema:
+          type: string
+          format: date
+        description: Последний день включительно
+      tags:
+      - lessons
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLessonList'
+          description: ''
+  /api/v1/lessons/{id}/:
+    get:
+      operationId: lessons_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - lessons
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lesson'
+          description: ''
   /api/v1/me/:
     get:
       operationId: me_retrieve
@@ -19,6 +75,106 @@ paths:
           description: ''
 components:
   schemas:
+    KindEnum:
+      enum:
+      - lecture
+      - seminar
+      - practice
+      - lab
+      type: string
+      description: |-
+        * `lecture` - Лекция
+        * `seminar` - Семинар
+        * `practice` - Практика
+        * `lab` - Лабораторная
+    Lesson:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        group:
+          type: string
+          readOnly: true
+        subject:
+          type: string
+          readOnly: true
+        teacher:
+          type: string
+          readOnly: true
+        room:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        ends_at:
+          type: string
+          format: date-time
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_change:
+          allOf:
+          - $ref: '#/components/schemas/LessonChange'
+          nullable: true
+          readOnly: true
+      required:
+      - ends_at
+      - group
+      - id
+      - kind
+      - last_change
+      - revision
+      - room
+      - starts_at
+      - status
+      - subject
+      - teacher
+      - updated_at
+    LessonChange:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        before:
+          readOnly: true
+        after:
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - after
+      - before
+      - created_at
+      - id
+      - reason
+      - revision
     Me:
       type: object
       properties:
@@ -52,6 +208,29 @@ components:
       - staff_profile
       - student_profile
       - username
+    PaginatedLessonList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Lesson'
     StaffProfile:
       type: object
       properties:
@@ -68,6 +247,16 @@ components:
       - faculty
       - faculty_id
       - full_name
+    StatusEnum:
+      enum:
+      - scheduled
+      - moved
+      - cancelled
+      type: string
+      description: |-
+        * `scheduled` - По расписанию
+        * `moved` - Перенесено
+        * `cancelled` - Отменено
     StudentProfile:
       type: object
       properties:
