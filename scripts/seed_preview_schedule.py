@@ -25,6 +25,7 @@ def main():
     parser.add_argument("--weeks", type=int, choices=range(1, 9), default=4)
     parser.add_argument("--week-start", type=date.fromisoformat)
     parser.add_argument("--database-container", default="main-project-db-1")
+    parser.add_argument("--refresh-demo-teachers", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     environment = database_environment(args.database_env)
@@ -77,6 +78,7 @@ def main():
         weeks=args.weeks,
         week_start=monday,
         dry_run=args.dry_run,
+        refresh_demo_teachers=args.refresh_demo_teachers,
         json_output=True,
         stdout=output,
     )
@@ -102,7 +104,7 @@ def main():
                     url = page["next"]
         finally:
             client.logout()
-        if not set(report["created_ids"]).issubset(visible):
+        if not set(report["created_ids"] + report["updated_ids"]).issubset(visible):
             raise RuntimeError("New lessons are absent from the student's schedule API.")
         report["verified"] = True
         report["visible_count"] = len(visible)
@@ -112,6 +114,7 @@ def main():
         f"Engineering schedule {monday} — {end}: created={report['created']}, "
         f"existing={report['existing']}, conflicts={report['conflicts']}, "
         f"planned={report['planned']}, subjects={len(report['subjects'])}, "
+        f"teachers_updated={report['teachers_updated']}, "
         f"verified={report.get('verified', False)}"
     )
 

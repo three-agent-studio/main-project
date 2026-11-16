@@ -19,6 +19,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--group", required=True, help="Имя существующей группы")
+        parser.add_argument(
+            "--refresh-demo-teachers",
+            action="store_true",
+            help="Явно заменить только прежние демоподписи на вымышленные ФИО",
+        )
         parser.add_argument("--profile", choices=["basic", "engineering"], default="basic")
         parser.add_argument(
             "--weeks", type=int, default=1, help="Для engineering: от 1 до 8 недель"
@@ -36,7 +41,10 @@ class Command(BaseCommand):
     @transaction.atomic
     def handle(self, *args, **options):
         if options["profile"] == "basic" and (
-            options["weeks"] != 1 or options["dry_run"] or options["json_output"]
+            options["weeks"] != 1
+            or options["dry_run"]
+            or options["json_output"]
+            or options["refresh_demo_teachers"]
         ):
             raise CommandError("Для этих параметров укажите --profile engineering.")
         if not 1 <= options["weeks"] <= 8:
@@ -55,7 +63,11 @@ class Command(BaseCommand):
             raise CommandError("Период выходит за допустимый диапазон дат.") from None
         if options["profile"] == "engineering":
             report = seed_engineering_schedule(
-                group, monday, options["weeks"], dry_run=options["dry_run"]
+                group,
+                monday,
+                options["weeks"],
+                dry_run=options["dry_run"],
+                refresh_demo_teachers=options["refresh_demo_teachers"],
             )
             if options["json_output"]:
                 self.stdout.write(json.dumps(report, ensure_ascii=False))
@@ -63,7 +75,8 @@ class Command(BaseCommand):
                 self.stdout.write(
                     f"Инженерное деморасписание: создано {report['created']}, "
                     f"запланировано {report['planned']}, уже есть {report['existing']}, "
-                    f"пропущено пересечений {report['conflicts']}."
+                    f"пропущено пересечений {report['conflicts']}, "
+                    f"ФИО обновлено {report['teachers_updated']}."
                 )
             return
         created_count = 0

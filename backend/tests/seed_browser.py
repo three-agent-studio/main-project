@@ -1,5 +1,7 @@
 """Create synthetic CI-only data in an isolated test database; never run on a public database."""
+
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 
 from accounts.models import Faculty, StaffProfile, StudentProfile, StudyGroup
 from accounts.provisioning import create_teacher_account
@@ -27,5 +29,13 @@ employee = get_user_model().objects.create_user(
 )
 StaffProfile.objects.create(user=employee, full_name="Демонстрационный сотрудник", faculty=faculty)
 
-create_teacher_account(username="browser_teacher", password="ephemeral-browser-test-only",
-    group=group, full_name="Демонстрационный преподаватель", subject="Демо: базы данных")
+create_teacher_account(
+    username="browser_teacher",
+    password="ephemeral-browser-test-only",
+    group=group,
+    full_name="Демонстрационный преподаватель",
+    subject="Демо: базы данных",
+)
+
+# Populate only the isolated CI database, never the shared preview database.
+call_command("seed_demo_schedule", group=group.name, profile="engineering")

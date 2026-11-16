@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useSession } from '../../../shared/api/session';
 import { dateLabel, kindNames, statusNames, useApiPage,
-  type Activity, type Lesson, type Result } from '../../../shared/academics/api';
+  type Activity, type Result } from '../../../shared/academics/api';
 import { Pagination } from '../../../shared/academics/Pagination';
 import styles from '../../../shared/academics/Study.module.css';
 import { Card } from '../../../shared/ui/Card';
 import { Page } from '../../../shared/ui/Page';
+import { ScheduleWeek } from './ScheduleWeek';
 
 export default function AcademicsPage() {
   const session = useSession();
@@ -18,23 +19,11 @@ export default function AcademicsPage() {
 
 function StudentWorkspace() {
   const [debtsOnly, setDebtsOnly] = useState(false);
-  const lessons = useApiPage<Lesson>('/lessons/');
   const activities = useApiPage<Activity>('/activities/');
   return <div className={styles.stack}>
-    <p className={styles.meta}>Дата и время отображаются в часовом поясе вашего устройства.</p>
-    <Card title="Расписание на текущую неделю">
-      {lessons.loading && <p role="status">Загрузка расписания…</p>}
-      {lessons.error && <div role="alert">{lessons.error}<button onClick={lessons.reload}>Повторить</button></div>}
-      <div className={styles.stack}>{lessons.data?.results.map(lesson => <article className={styles.item} key={lesson.id}>
-        <h3>{lesson.subject}</h3><p>{dateLabel(lesson.starts_at)} — {dateLabel(lesson.ends_at)}</p>
-        <p className={styles.meta}>{lesson.teacher}. Аудитория: {lesson.room}</p>
-        {lesson.status !== 'scheduled' && <span className={styles.badge}>{lesson.status === 'cancelled' ? 'Отменено' : 'Перенесено'}</span>}
-        {lesson.last_change && <p>{lesson.last_change.reason}</p>}
-      </article>)}</div>
-      {lessons.data && <>{!lessons.data.count && <p>На этой неделе занятий пока нет.</p>}
-        <Pagination data={lessons.data} page={lessons.page} setPage={lessons.setPage} /></>}
-    </Card>
+    <ScheduleWeek />
     <Card title="Задания и сессия">
+      <p className={styles.meta}>Время заданий и зачётов — в часовом поясе вашего устройства.</p>
       {activities.loading && <p role="status">Загрузка заданий…</p>}
       {activities.error && <div role="alert">{activities.error}<button onClick={activities.reload}>Повторить</button></div>}
       <div className={styles.stack}>{activities.data?.results.map(activity => <article className={styles.item} key={activity.id}>

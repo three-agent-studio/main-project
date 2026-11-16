@@ -10,6 +10,7 @@ from django.core.management.base import CommandError
 from django.test import Client
 from django.utils import timezone
 
+from academics.engineering_schedule import COURSES
 from academics.models import Lesson, LessonChange
 from academics.services import change_lesson
 from accounts.models import Faculty, StudentProfile, StudyGroup, User
@@ -59,7 +60,7 @@ def test_four_weeks_have_varied_non_overlapping_synthetic_classes(group):
         last_by_day[day] = end
         count_by_day[day] = count_by_day.get(day, 0) + 1
         assert lesson.room.startswith("ДЕМО-")
-        assert lesson.teacher.startswith("Демо-преподаватель:")
+        assert lesson.teacher in {course[1] for course in COURSES.values()}
     assert set(count_by_day.values()) == {2, 3, 4}
 
 
@@ -142,3 +143,66 @@ def test_filled_schedule_is_visible_only_to_its_current_group(group, monkeypatch
     page = response.json()
     assert page["count"] == 18
     assert {item["group"] for item in page["results"]} == {group.name}
+
+
+def restore_old_placeholders():
+    from academics.engineering_schedule import LEGACY_TEACHERS
+
+    for old, full in LEGACY_TEACHERS.items():
+        Lesson.objects.filter(teacher=full).update(teacher=old)
+
+
+def test_explicit_name_upgrade_is_audited_and_keeps_manual_changes(group):
+    seed(group, weeks=2)
+    restore_old_placeholders()
+    first, second = list(Lesson.objects.order_by("starts_at")[:2])
+    change_lesson(
+        first.pk, changes={"teacher": "Вымышленный Ручной Преподаватель"}, reason="Ручное ФИО"
+    )
+    change_lesson(second.pk, changes={"subject": "Ручной предмет"}, reason="Ручной предмет")
+    fields = ["id", "group_id", "subject", "room", "starts_at", "ends_at", "status"]
+    before = list(Lesson.objects.order_by("id").values_list(*fields))
+    assert seed(group, weeks=2)["teachers_updated"] == 0
+    old_history = LessonChange.objects.count()
+    report = seed(group, weeks=2, refresh_demo_teachers=True)
+    assert report["teachers_updated"] == 34 and report["created"] == 0
+    assert LessonChange.objects.count() == old_history + 34
+    assert list(Lesson.objects.order_by("id").values_list(*fields)) == before
+    first.refresh_from_db()
+    second.refresh_from_db()
+    assert first.teacher == "Вымышленный Ручной Преподаватель"
+    assert second.teacher.startswith("Демо-преподаватель:")
+    assert seed(group, weeks=2, refresh_demo_teachers=True)["teachers_updated"] == 0
+    assert LessonChange.objects.count() == old_history + 34
+
+
+def test_name_upgrade_dry_run_keeps_the_database_unchanged(group):
+    seed(group, weeks=1)
+    restore_old_placeholders()
+    before = list(Lesson.objects.order_by("id").values_list("teacher", "revision"))
+    history = LessonChange.objects.count()
+    report = seed(group, weeks=1, refresh_demo_teachers=True, dry_run=True)
+    assert report["teachers_planned"] == 18 and report["teachers_updated"] == 0
+    assert list(Lesson.objects.order_by("id").values_list("teacher", "revision")) == before
+    assert LessonChange.objects.count() == history
+
+
+def test_failed_name_upgrade_rolls_back_earlier_updates(group, monkeypatch):
+    seed(group, weeks=1)
+    restore_old_placeholders()
+    before = list(Lesson.objects.order_by("id").values_list("teacher", "revision"))
+    history = LessonChange.objects.count()
+    calls = 0
+
+    def fail_after_one(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise RuntimeError("Synthetic update failure")
+        return change_lesson(*args, **kwargs)
+
+    monkeypatch.setattr("academics.engineering_schedule.change_lesson", fail_after_one)
+    with pytest.raises(RuntimeError, match="update failure"):
+        seed(group, weeks=1, refresh_demo_teachers=True)
+    assert list(Lesson.objects.order_by("id").values_list("teacher", "revision")) == before
+    assert LessonChange.objects.count() == history

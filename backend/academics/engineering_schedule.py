@@ -16,20 +16,44 @@ from accounts.models import StudyGroup
 from .models import Lesson
 from .services import change_lesson
 
-# Subject, synthetic teacher label, synthetic room. No real personal data.
+# Subject, invented full teacher name, synthetic room. Never import real personal data.
 COURSES = {
-    "math": ("Высшая математика", "Математика", "А · 201"),
-    "graphics": ("Инженерная графика", "Графика", "А · 310"),
-    "physics": ("Физика", "Физика", "Б · 102"),
-    "mechanics": ("Теоретическая механика", "Механика", "А · 204"),
-    "materials": ("Материаловедение", "Материалы", "Б · лаборатория 105"),
-    "language": ("Иностранный язык", "Иностранный язык", "А · 215"),
-    "cad": ("Компьютерное проектирование (CAD)", "CAD", "В · компьютерный класс 302"),
-    "sport": ("Физическая культура", "Физическая культура", "Спортзал"),
-    "strength": ("Сопротивление материалов", "Прочность", "А · 208"),
-    "metrology": ("Метрология и технические измерения", "Измерения", "Б · лаборатория 107"),
-    "project": ("Проектная работа", "Проектный практикум", "В · проектная мастерская"),
-    "manufacturing": ("Технология машиностроения", "Технологии", "Б · 206"),
+    "math": ("Высшая математика", "Лебедев Артём Сергеевич", "А · 201"),
+    "graphics": ("Инженерная графика", "Соколова Марина Викторовна", "А · 310"),
+    "physics": ("Физика", "Орлов Дмитрий Андреевич", "Б · 102"),
+    "mechanics": ("Теоретическая механика", "Волков Павел Игоревич", "А · 204"),
+    "materials": ("Материаловедение", "Морозова Елена Алексеевна", "Б · лаборатория 105"),
+    "language": ("Иностранный язык", "Крылова Анна Михайловна", "А · 215"),
+    "cad": (
+        "Компьютерное проектирование (CAD)",
+        "Белов Никита Романович",
+        "В · компьютерный класс 302",
+    ),
+    "sport": ("Физическая культура", "Громов Максим Олегович", "Спортзал"),
+    "strength": ("Сопротивление материалов", "Захаров Илья Владимирович", "А · 208"),
+    "metrology": (
+        "Метрология и технические измерения",
+        "Фёдорова Ольга Сергеевна",
+        "Б · лаборатория 107",
+    ),
+    "project": ("Проектная работа", "Васильев Роман Евгеньевич", "В · проектная мастерская"),
+    "manufacturing": ("Технология машиностроения", "Павлова Наталья Дмитриевна", "Б · 206"),
+}
+
+# Recognise only our exact old placeholders when explicitly upgrading demo data.
+LEGACY_TEACHERS = {
+    "Демо-преподаватель: Математика": "Лебедев Артём Сергеевич",
+    "Демо-преподаватель: Графика": "Соколова Марина Викторовна",
+    "Демо-преподаватель: Физика": "Орлов Дмитрий Андреевич",
+    "Демо-преподаватель: Механика": "Волков Павел Игоревич",
+    "Демо-преподаватель: Материалы": "Морозова Елена Алексеевна",
+    "Демо-преподаватель: Иностранный язык": "Крылова Анна Михайловна",
+    "Демо-преподаватель: CAD": "Белов Никита Романович",
+    "Демо-преподаватель: Физическая культура": "Громов Максим Олегович",
+    "Демо-преподаватель: Прочность": "Захаров Илья Владимирович",
+    "Демо-преподаватель: Измерения": "Фёдорова Ольга Сергеевна",
+    "Демо-преподаватель: Проектный практикум": "Васильев Роман Евгеньевич",
+    "Демо-преподаватель: Технологии": "Павлова Наталья Дмитриевна",
 }
 
 # Day offset, start hour, subject key, kind in synthetic week A / B.
@@ -83,7 +107,7 @@ def occurrences(group, monday, weeks):
                 {
                     "group": group,
                     "subject": subject,
-                    "teacher": f"Демо-преподаватель: {teacher}",
+                    "teacher": teacher,
                     "room": f"ДЕМО-{room}",
                     "kind": kind_a if phase == 0 else kind_b,
                     "starts_at": begins,
@@ -95,7 +119,7 @@ def occurrences(group, monday, weeks):
 
 
 @transaction.atomic
-def seed_engineering_schedule(group, monday, weeks, *, dry_run=False):
+def seed_engineering_schedule(group, monday, weeks, *, dry_run=False, refresh_demo_teachers=False):
     # Serialize repeat seed jobs for this group; other groups remain independent.
     StudyGroup.objects.select_for_update().get(pk=group.pk)
     report = {
@@ -111,11 +135,35 @@ def seed_engineering_schedule(group, monday, weeks, *, dry_run=False):
         "conflicts": 0,
         "planned": 0,
         "created_ids": [],
+        "teachers_updated": 0,
+        "teachers_planned": 0,
+        "updated_ids": [],
     }
     for identifier, defaults, changes, reason in occurrences(group, monday, weeks):
-        if Lesson.objects.filter(pk=identifier).exists():
+        existing = Lesson.objects.select_for_update().filter(pk=identifier).first()
+        if existing is not None:
             report["existing"] += 1
-            continue  # Preserve edits, cancellation and history on every repeat.
+            if (
+                refresh_demo_teachers
+                and existing.group_id == group.pk
+                and existing.subject == defaults["subject"]
+                and LEGACY_TEACHERS.get(existing.teacher) == defaults["teacher"]
+            ):
+                report["teachers_planned"] += 1
+                if not dry_run:
+                    reason = "Уточнено ФИО преподавателя."
+                    previous = existing.changes.first()
+                    if existing.status != Lesson.Status.SCHEDULED and previous:
+                        reason += " " + previous.reason
+                    change_lesson(
+                        existing.pk,
+                        changes={"teacher": defaults["teacher"]},
+                        reason=reason[:500],
+                        expected_revision=existing.revision,
+                    )
+                    report["teachers_updated"] += 1
+                    report["updated_ids"].append(str(existing.pk))
+            continue  # All other manual edits and history remain unchanged.
         overlaps = Lesson.objects.filter(
             group=group, starts_at__lt=defaults["ends_at"], ends_at__gt=defaults["starts_at"]
         ).exclude(status=Lesson.Status.CANCELLED)
