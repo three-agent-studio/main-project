@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { api, ApiError } from '../../../shared/api/client';
 import { displayName, initials, type Me } from '../../../shared/api/session';
 import { Card } from '../../../shared/ui/Card';
@@ -47,7 +48,11 @@ export default function ProfilePage() {
       <button onClick={() => { setState({ kind: 'loading' }); setAttempt(attempt + 1); }}>Повторить</button>
     </div>}
     {state.kind === 'ready' && <>
-      <ProfileCard user={state.user} />
+      {state.user.teacher_profile && !state.user.student_profile
+        ? <Card title={state.user.teacher_profile.full_name}>
+          <p>Преподаватель. {state.user.teacher_profile.faculty}</p>
+          <Link className="button" to="/teaching">Открыть кабинет преподавателя</Link>
+        </Card> : <ProfileCard user={state.user} />}
       {logoutError && <p role="alert" className="notice notice-error">Не удалось выйти. Повторите попытку.</p>}
       <button className="button-secondary" onClick={logout}>Выйти</button>
     </>}

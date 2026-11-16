@@ -20,9 +20,11 @@ class StudyGroup(models.Model):
     course = models.PositiveSmallIntegerField()
 
     class Meta:
-        constraints = [models.CheckConstraint(
-            condition=models.Q(course__gte=1, course__lte=8), name="group_course_1_to_8"
-        )]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(course__gte=1, course__lte=8), name="group_course_1_to_8"
+            )
+        ]
 
     def __str__(self):
         return self.name
@@ -43,6 +45,18 @@ class StaffProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="staff_profile")
     full_name = models.CharField(max_length=250)
     faculty = models.ForeignKey(Faculty, on_delete=models.PROTECT, related_name="staff_members")
+
+    def __str__(self):
+        return self.full_name
+
+
+class TeacherProfile(models.Model):
+    """Teaching role, without Django Admin or deanery access. Revoke via is_active."""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="teacher_profile")
+    full_name = models.CharField(max_length=250)
+    faculty = models.ForeignKey(Faculty, on_delete=models.PROTECT, related_name="teachers")
+    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return self.full_name

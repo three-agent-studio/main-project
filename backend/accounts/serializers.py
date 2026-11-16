@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import StaffProfile, StudentProfile, User
+from .models import StaffProfile, StudentProfile, TeacherProfile, User
 
 
 class StudentProfileSerializer(serializers.ModelSerializer):
@@ -25,9 +25,19 @@ class StaffProfileSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class TeacherProfileSerializer(serializers.ModelSerializer):
+    faculty = serializers.CharField(source="faculty.name", read_only=True)
+
+    class Meta:
+        model = TeacherProfile
+        fields = ["full_name", "faculty", "is_active"]
+        read_only_fields = fields
+
+
 class MeSerializer(serializers.ModelSerializer):
     student_profile = StudentProfileSerializer(read_only=True, allow_null=True)
     staff_profile = StaffProfileSerializer(read_only=True, allow_null=True)
+    teacher_profile = TeacherProfileSerializer(read_only=True, allow_null=True)
     roles = serializers.SerializerMethodField()
 
     def get_roles(self, obj) -> list[str]:
@@ -36,9 +46,12 @@ class MeSerializer(serializers.ModelSerializer):
             roles.append("student")
         if getattr(obj, "staff_profile", None) is not None:
             roles.append("deanery_staff")
+        teacher = getattr(obj, "teacher_profile", None)
+        if teacher is not None and teacher.is_active:
+            roles.append("teacher")
         return roles
 
     class Meta:
         model = User
-        fields = ["id", "username", "student_profile", "staff_profile", "roles"]
+        fields = ["id", "username", "student_profile", "staff_profile", "teacher_profile", "roles"]
         read_only_fields = fields

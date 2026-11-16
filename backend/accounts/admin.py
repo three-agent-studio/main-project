@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Faculty, StaffProfile, StudentProfile, StudyGroup, User
+from .models import Faculty, StaffProfile, StudentProfile, StudyGroup, TeacherProfile, User
 
 admin.site.register(User, UserAdmin)
 admin.site.register(Faculty)
@@ -31,3 +31,8 @@ class StaffProfileAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return self.has_module_permission(request)
+
+
+@admin.register(TeacherProfile)
+class TeacherProfileAdmin(StaffProfileAdmin):
+    list_display = ["full_name", "user", "faculty", "is_active"]

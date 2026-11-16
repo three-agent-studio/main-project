@@ -1,7 +1,9 @@
 from django import forms
 from django.contrib import admin
 
-from .models import Lesson, LessonChange
+from accounts.admin import StaffProfileAdmin
+
+from .models import Lesson, LessonChange, TeachingAssignment
 from .services import EDITABLE_FIELDS, change_lesson
 
 
@@ -73,3 +75,13 @@ class LessonChangeAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(TeachingAssignment)
+class TeachingAssignmentAdmin(StaffProfileAdmin):
+    list_display = ["teacher", "group", "subject", "term", "is_active"]
+    list_filter = ["is_active", "group", "teacher"]
+    search_fields = ["subject", "teacher__full_name", "group__name"]
+
+    def get_readonly_fields(self, request, obj=None):
+        return ["teacher", "group", "subject", "term"] if obj else []

@@ -95,6 +95,12 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
 }
 SPECTACULAR_SETTINGS = {
+    "ENUM_NAME_OVERRIDES": {
+        "LessonKindEnum": "academics.models.Lesson.Kind",
+        "LessonStatusEnum": "academics.models.Lesson.Status",
+        "ActivityKindEnum": "academics.teaching_models.AcademicActivity.Kind",
+        "AssessmentStatusEnum": "academics.teaching_models.Assessment.Status",
+    },
     "TITLE": "Цифровой деканат API", "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAdminUser"],

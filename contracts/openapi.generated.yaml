@@ -3,6 +3,48 @@ info:
   title: Цифровой деканат API
   version: 1.0.0
 paths:
+  /api/v1/activities/:
+    get:
+      operationId: activities_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - activities
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityPublicList'
+          description: ''
+  /api/v1/assessments/:
+    get:
+      operationId: assessments_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - assessments
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssessmentList'
+          description: ''
   /api/v1/lessons/:
     get:
       operationId: lessons_list
@@ -73,20 +115,449 @@ paths:
               schema:
                 $ref: '#/components/schemas/Me'
           description: ''
+  /api/v1/teaching/activities/:
+    get:
+      operationId: teaching_activities_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - teaching
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedActivityWriteList'
+          description: ''
+    post:
+      operationId: teaching_activities_create
+      tags:
+      - teaching
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivityWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ActivityWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ActivityWrite'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityWrite'
+          description: ''
+  /api/v1/teaching/activities/{id}/:
+    get:
+      operationId: teaching_activities_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this academic activity.
+        required: true
+      tags:
+      - teaching
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityWrite'
+          description: ''
+    patch:
+      operationId: teaching_activities_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this academic activity.
+        required: true
+      tags:
+      - teaching
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActivityWrite'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedActivityWrite'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedActivityWrite'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityWrite'
+          description: ''
+  /api/v1/teaching/activities/{id}/results/:
+    get:
+      operationId: teaching_activities_results_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - teaching
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssessmentList'
+          description: ''
+    post:
+      operationId: teaching_activities_results_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - teaching
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResultInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResultInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResultInput'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assessment'
+          description: ''
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assessment'
+          description: ''
+  /api/v1/teaching/activities/{id}/students/:
+    get:
+      operationId: teaching_activities_students_list
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - teaching
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRosterList'
+          description: ''
+  /api/v1/teaching/assignments/:
+    get:
+      operationId: teaching_assignments_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - teaching
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssignmentList'
+          description: ''
 components:
   schemas:
-    KindEnum:
+    ActivityKindEnum:
       enum:
-      - lecture
-      - seminar
-      - practice
-      - lab
+      - homework
+      - test
+      - credit
+      - exam
       type: string
       description: |-
-        * `lecture` - Лекция
-        * `seminar` - Семинар
-        * `practice` - Практика
-        * `lab` - Лабораторная
+        * `homework` - Домашнее задание
+        * `test` - Контрольная
+        * `credit` - Зачёт
+        * `exam` - Экзамен
+    ActivityPublic:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        assignment:
+          type: integer
+          readOnly: true
+        subject:
+          type: string
+          readOnly: true
+        term:
+          type: string
+          readOnly: true
+        group_name:
+          type: string
+          readOnly: true
+        teacher:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ActivityKindEnum'
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        scheduled_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        due_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        room:
+          type: string
+          readOnly: true
+        is_cancelled:
+          type: boolean
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - assignment
+      - description
+      - due_at
+      - group_name
+      - id
+      - is_cancelled
+      - kind
+      - revision
+      - room
+      - scheduled_at
+      - subject
+      - teacher
+      - term
+      - title
+      - updated_at
+    ActivityWrite:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        assignment:
+          type: integer
+        subject:
+          type: string
+          readOnly: true
+        term:
+          type: string
+          readOnly: true
+        group_name:
+          type: string
+          readOnly: true
+        teacher:
+          type: string
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/ActivityKindEnum'
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+        room:
+          type: string
+          maxLength: 100
+        is_cancelled:
+          type: boolean
+        revision:
+          type: integer
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expected_revision:
+          type: integer
+          minimum: 1
+          writeOnly: true
+      required:
+      - assignment
+      - group_name
+      - id
+      - kind
+      - revision
+      - subject
+      - teacher
+      - term
+      - title
+      - updated_at
+    Assessment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        student:
+          type: integer
+          readOnly: true
+        activity:
+          allOf:
+          - $ref: '#/components/schemas/ActivityPublic'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AssessmentStatusEnum'
+          readOnly: true
+        score:
+          type: integer
+          readOnly: true
+          nullable: true
+        comment:
+          type: string
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        is_debt:
+          type: boolean
+          readOnly: true
+      required:
+      - activity
+      - comment
+      - id
+      - is_debt
+      - revision
+      - score
+      - status
+      - student
+      - updated_at
+    AssessmentStatusEnum:
+      enum:
+      - graded
+      - passed
+      - failed
+      - debt
+      type: string
+      description: |-
+        * `graded` - Оценка
+        * `passed` - Зачтено
+        * `failed` - Не зачтено
+        * `debt` - Задолженность
+    Assignment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        group:
+          type: integer
+          readOnly: true
+        group_name:
+          type: string
+          readOnly: true
+        subject:
+          type: string
+          readOnly: true
+        term:
+          type: string
+          readOnly: true
+      required:
+      - group
+      - group_name
+      - id
+      - subject
+      - term
     Lesson:
       type: object
       properties:
@@ -108,7 +579,7 @@ components:
           readOnly: true
         kind:
           allOf:
-          - $ref: '#/components/schemas/KindEnum'
+          - $ref: '#/components/schemas/LessonKindEnum'
           readOnly: true
         starts_at:
           type: string
@@ -120,7 +591,7 @@ components:
           readOnly: true
         status:
           allOf:
-          - $ref: '#/components/schemas/StatusEnum'
+          - $ref: '#/components/schemas/LessonStatusEnum'
           readOnly: true
         revision:
           type: integer
@@ -175,6 +646,28 @@ components:
       - id
       - reason
       - revision
+    LessonKindEnum:
+      enum:
+      - lecture
+      - seminar
+      - practice
+      - lab
+      type: string
+      description: |-
+        * `lecture` - Лекция
+        * `seminar` - Семинар
+        * `practice` - Практика
+        * `lab` - Лабораторная
+    LessonStatusEnum:
+      enum:
+      - scheduled
+      - moved
+      - cancelled
+      type: string
+      description: |-
+        * `scheduled` - По расписанию
+        * `moved` - Перенесено
+        * `cancelled` - Отменено
     Me:
       type: object
       properties:
@@ -197,6 +690,11 @@ components:
           - $ref: '#/components/schemas/StaffProfile'
           readOnly: true
           nullable: true
+        teacher_profile:
+          allOf:
+          - $ref: '#/components/schemas/TeacherProfile'
+          readOnly: true
+          nullable: true
         roles:
           type: array
           items:
@@ -207,7 +705,100 @@ components:
       - roles
       - staff_profile
       - student_profile
+      - teacher_profile
       - username
+    PaginatedActivityPublicList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityPublic'
+    PaginatedActivityWriteList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivityWrite'
+    PaginatedAssessmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Assessment'
+    PaginatedAssignmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Assignment'
     PaginatedLessonList:
       type: object
       required:
@@ -231,6 +822,124 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Lesson'
+    PaginatedRosterList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Roster'
+    PatchedActivityWrite:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        assignment:
+          type: integer
+        subject:
+          type: string
+          readOnly: true
+        term:
+          type: string
+          readOnly: true
+        group_name:
+          type: string
+          readOnly: true
+        teacher:
+          type: string
+          readOnly: true
+        kind:
+          $ref: '#/components/schemas/ActivityKindEnum'
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        scheduled_at:
+          type: string
+          format: date-time
+          nullable: true
+        due_at:
+          type: string
+          format: date-time
+          nullable: true
+        room:
+          type: string
+          maxLength: 100
+        is_cancelled:
+          type: boolean
+        revision:
+          type: integer
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expected_revision:
+          type: integer
+          minimum: 1
+          writeOnly: true
+    ResultInput:
+      type: object
+      properties:
+        student:
+          type: integer
+          minimum: 1
+        expected_revision:
+          type: integer
+          minimum: 0
+          default: 0
+        status:
+          $ref: '#/components/schemas/AssessmentStatusEnum'
+        score:
+          type: integer
+          maximum: 5
+          minimum: 2
+          nullable: true
+        comment:
+          type: string
+          default: ''
+          maxLength: 2000
+      required:
+      - status
+      - student
+    Roster:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        full_name:
+          type: string
+          readOnly: true
+        result:
+          allOf:
+          - $ref: '#/components/schemas/Assessment'
+          nullable: true
+          readOnly: true
+      required:
+      - full_name
+      - id
+      - result
     StaffProfile:
       type: object
       properties:
@@ -247,16 +956,6 @@ components:
       - faculty
       - faculty_id
       - full_name
-    StatusEnum:
-      enum:
-      - scheduled
-      - moved
-      - cancelled
-      type: string
-      description: |-
-        * `scheduled` - По расписанию
-        * `moved` - Перенесено
-        * `cancelled` - Отменено
     StudentProfile:
       type: object
       properties:
@@ -281,6 +980,22 @@ components:
       - full_name
       - group
       - programme
+    TeacherProfile:
+      type: object
+      properties:
+        full_name:
+          type: string
+          readOnly: true
+        faculty:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+      required:
+      - faculty
+      - full_name
+      - is_active
   securitySchemes:
     cookieAuth:
       type: apiKey

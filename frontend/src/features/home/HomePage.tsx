@@ -11,11 +11,10 @@ function greeting(hour: number): string {
   return 'Добрый вечер';
 }
 
-// Honest roadmap: these sections have no API yet (Issues #7–#9), so the home
-// screen describes them instead of showing invented timetable or grade data.
-const upcoming: { title: string; text: string; Icon: ComponentType }[] = [
-  { title: 'Расписание', text: 'Пары на сегодня и неделю, аудитории и переносы.', Icon: CalendarIcon },
-  { title: 'Успеваемость', text: 'Оценки, зачёты и сессия в одном списке.', Icon: GradesIcon },
+// Only sections backed by actual API/pages are marked ready; #8/#9 remain planned.
+const upcoming: { title: string; text: string; Icon: ComponentType; ready?: boolean }[] = [
+  { title: 'Расписание', text: 'Пары на текущую неделю, аудитории и переносы.', Icon: CalendarIcon, ready: true },
+  { title: 'Успеваемость', text: 'Задания, оценки, зачёты и задолженности.', Icon: GradesIcon, ready: true },
   { title: 'Заявки и справки', text: 'Заказ справки онлайн и статус без очереди в деканат.', Icon: RequestIcon },
   { title: 'Уведомления', text: 'Объявления деканата и напоминания о сроках.', Icon: BellIcon },
 ];
@@ -30,17 +29,18 @@ export default function HomePage() {
       <h1 id="home-title">{user ? `${hello}, ${firstName(displayName(user))}` : `${hello}!`}</h1>
       <p className={styles.lead}>Здесь собрано всё, что связано с учёбой: от расписания до справок из деканата.</p>
       {user
-        ? <Link className="button" to="/profile">Открыть мой профиль</Link>
+        ? <Link className="button" to={user.roles.includes('teacher') && !user.roles.includes('student') ? '/teaching' : '/profile'}>
+          {user.roles.includes('teacher') && !user.roles.includes('student') ? 'Открыть кабинет преподавателя' : 'Открыть мой профиль'}</Link>
         : session.kind !== 'loading' && <a className="button" href="/auth/login/">Войти в кабинет</a>}
     </section>
 
     <section aria-labelledby="upcoming-title">
-      <h2 id="upcoming-title" className={styles.sectionTitle}>Скоро в кабинете</h2>
+      <h2 id="upcoming-title" className={styles.sectionTitle}>Возможности кабинета</h2>
       <ul className={styles.upcoming}>
-        {upcoming.map(({ title, text, Icon }) => <li key={title}>
+        {upcoming.map(({ title, text, Icon, ready }) => <li key={title}>
           <span className={styles.icon}><Icon /></span>
-          <div><h3>{title}</h3><p>{text}</p></div>
-          <span className={styles.status}>В разработке</span>
+          <div><h3>{ready && user?.roles.includes('student') ? <Link to="/academics">{title}</Link> : title}</h3><p>{text}</p></div>
+          <span className={styles.status}>{ready ? 'Доступно' : 'В разработке'}</span>
         </li>)}
       </ul>
     </section>

@@ -7,6 +7,13 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
+from .teaching_models import (  # noqa: F401 -- register domain models with Django's app registry.
+    AcademicActivity,
+    Assessment,
+    AssessmentChange,
+    TeachingAssignment,
+)
+
 
 class Lesson(models.Model):
     class Kind(models.TextChoices):
