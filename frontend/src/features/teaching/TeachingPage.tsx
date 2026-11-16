@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { api } from '../../shared/api/client';
 import { useSession } from '../../shared/api/session';
 import { dateLabel, errorMessage, kindNames, localInput, statusNames, useApiPage,
@@ -68,6 +68,7 @@ function TeacherWorkspace() {
 function ActivityForm({ assignments, initial, onSaved, cancel }: {
   assignments: Assignment[]; initial: Activity | null; onSaved: (activity: Activity) => void; cancel: () => void;
 }) {
+  const fieldId = useId();
   const [kind, setKind] = useState<ActivityKind>(initial?.kind ?? 'homework');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -88,21 +89,21 @@ function ActivityForm({ assignments, initial, onSaved, cancel }: {
   return <form className={styles.form} onSubmit={submit}>
     {error && <p role="alert" className="notice notice-error">{error}</p>}
     <div className={styles.fields}>
-      <label className={styles.field}>Дисциплина и группа
-        <select name="assignment" required disabled={!!initial} defaultValue={initial?.assignment ?? ''}>
+      <div className={styles.field}><label htmlFor={`${fieldId}-assignment`}>Дисциплина и группа</label>
+        <select id={`${fieldId}-assignment`} name="assignment" required disabled={!!initial} defaultValue={initial?.assignment ?? ''}>
           <option value="" disabled>Выберите назначение</option>
           {initial && !assignments.some(item => item.id === initial.assignment) && <option value={initial.assignment}>{initial.subject} — {initial.group_name}</option>}
           {assignments.map(course => <option key={course.id} value={course.id}>{course.subject} — {course.group_name}</option>)}
         </select>
-      </label>
-      <label className={styles.field}>Вид работы
-        <select name="kind" value={kind} disabled={!!initial} onChange={event => setKind(event.target.value as ActivityKind)}>
+      </div>
+      <div className={styles.field}><label htmlFor={`${fieldId}-kind`}>Вид работы</label>
+        <select id={`${fieldId}-kind`} name="kind" value={kind} disabled={!!initial} onChange={event => setKind(event.target.value as ActivityKind)}>
           {Object.entries(kindNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
-      </label>
+      </div>
     </div>
     <label className={styles.field}>Название<input name="title" required maxLength={200} defaultValue={initial?.title ?? ''} /></label>
-    <label className={styles.field}>Задание или описание<textarea name="description" maxLength={5000} defaultValue={initial?.description ?? ''} /></label>
+    <div className={styles.field}><label htmlFor={`${fieldId}-description`}>Задание или описание</label><textarea id={`${fieldId}-description`} name="description" maxLength={5000} defaultValue={initial?.description ?? ''} /></div>
     <div className={styles.fields}>
       <label className={styles.field}>Дата и время начала<input type="datetime-local" name="scheduled_at" required={kind !== 'homework'} defaultValue={localInput(initial?.scheduled_at ?? null)} /></label>
       <label className={styles.field}>Срок сдачи<input type="datetime-local" name="due_at" required={kind === 'homework'} defaultValue={localInput(initial?.due_at ?? null)} /></label>
@@ -134,6 +135,7 @@ function Roster({ activity }: {activity: Activity}) {
 }
 
 function GradeRow({ student, activity }: {student: Learner; activity: Activity}) {
+  const fieldId = useId();
   const [result, setResult] = useState(student.result);
   const [status, setStatus] = useState<ResultStatus | ''>(student.result?.status ?? '');
   const [busy, setBusy] = useState(false);
@@ -154,16 +156,17 @@ function GradeRow({ student, activity }: {student: Learner; activity: Activity})
     <h3>{student.full_name}</h3>
     {result?.is_debt && <span className={`${styles.badge} ${styles.debt}`}>Задолженность</span>}
     <div className={styles.fields}>
-      <label className={styles.field}>Результат<select required value={status} onChange={event => setStatus(event.target.value as ResultStatus)}>
+      {/* Explicit labels keep the field name independent of option text and saved comments. */}
+      <div className={styles.field}><label htmlFor={`${fieldId}-status`}>Результат</label><select id={`${fieldId}-status`} required value={status} onChange={event => setStatus(event.target.value as ResultStatus)}>
         <option value="" disabled>Выберите результат</option>
         {Object.entries(statusNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-      </select></label>
-      <label className={styles.field}>Оценка<select name="score" required={status === 'graded'} disabled={status !== 'graded'} defaultValue={result?.score ?? ''}>
+      </select></div>
+      <div className={styles.field}><label htmlFor={`${fieldId}-score`}>Оценка</label><select id={`${fieldId}-score`} name="score" required={status === 'graded'} disabled={status !== 'graded'} defaultValue={result?.score ?? ''}>
         <option value="" disabled>Выберите оценку</option>
         {[2,3,4,5].map(score => <option key={score} value={score}>{score}</option>)}
-      </select></label>
+      </select></div>
     </div>
-    <label className={styles.field}>Комментарий<textarea name="comment" maxLength={2000} defaultValue={result?.comment ?? ''} /></label>
+    <div className={styles.field}><label htmlFor={`${fieldId}-comment`}>Комментарий</label><textarea id={`${fieldId}-comment`} name="comment" maxLength={2000} defaultValue={result?.comment ?? ''} /></div>
     {error && <p role="alert" className="notice notice-error">{error}</p>}
     {message && <p role="status" className={styles.success}>{message}</p>}
     <div><button disabled={busy || activity.is_cancelled} type="submit">{busy ? 'Сохраняем…' : 'Сохранить результат'}</button></div>
