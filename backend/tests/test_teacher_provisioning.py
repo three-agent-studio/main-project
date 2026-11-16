@@ -10,7 +10,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
 spec = importlib.util.spec_from_file_location(
-    "provision_teacher_preview", ROOT / "scripts/provision_teacher_preview.py"
+    "local_preview_state", ROOT / "scripts/local_preview_state.py"
 )
 provision = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(provision)
@@ -48,6 +48,12 @@ def test_backup_header_and_permissions_are_verified(monkeypatch, tmp_path):
     monkeypatch.setattr(provision.subprocess, "run", dump)
     archive = provision.backup_database({}, tmp_path, "synthetic-container")
     assert stat.S_IMODE(archive.stat().st_mode) == 0o600
+    schedule_archive = provision.backup_database(
+        {}, tmp_path, "synthetic-container", label="schedule"
+    )
+    assert schedule_archive.name.startswith("before-schedule-")
+    with pytest.raises(ValueError, match="Unsupported backup label"):
+        provision.backup_database({}, tmp_path, "synthetic-container", label="../invalid")
     monkeypatch.setattr(provision.subprocess, "run", lambda *a, **k: None)
     with pytest.raises(RuntimeError, match="header is invalid"):
         provision.backup_database({}, tmp_path, "synthetic-container")
