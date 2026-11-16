@@ -128,11 +128,12 @@ def main():
     import django
 
     django.setup()
+    from django.core.management import call_command
+    from django.test import Client
+
     from academics.models import TeachingAssignment
     from accounts.models import StudentProfile, TeacherProfile, User
     from accounts.provisioning import create_teacher_account
-    from django.core.management import call_command
-    from django.test import Client
 
     student = StudentProfile.objects.select_related("group__faculty").get(
         user__username=args.student
