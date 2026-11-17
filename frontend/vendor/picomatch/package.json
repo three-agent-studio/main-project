@@ -1,0 +1,21 @@
+{
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "license": "MIT",
+  "files": [
+    "index.js",
+    "posix.js",
+    "lib"
+  ],
+  "sideEffects": false,
+  "main": "index.js",
+  "engines": {
+    "node": ">=12"
+  },
+  "name": "@digital-deanery/picomatch",
+  "version": "4.0.7+deanery.1",
+  "private": true,
+  "description": "Private security backport of picomatch 4.0.7; repeated extglobs are literalized.",
+  "repository": "https://github.com/three-agent-studio/main-project",
+  "x-upstream": "https://github.com/micromatch/picomatch/tree/4.0.7",
+  "x-advisory": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf"
+}

@@ -1,0 +1,19 @@
+.stack { display: grid; gap: var(--space-6); }
+.form { display: grid; gap: 16px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 16px; }
+.field { display: grid; gap: 8px; font-weight: 600; min-width: 0; }
+.field input, .field select, .field textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 46px; padding: 10px 12px; border: 1px solid var(--line-control); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; font-weight: 400; }
+.field textarea { min-height: 96px; resize: vertical; }
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.actions button { min-height: 44px; }
+.check { display: inline-flex; gap: 10px; align-items: center; min-height: 44px; }
+.item { display: grid; gap: 10px; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); overflow-wrap: anywhere; }
+.item h3, .item p { margin: 0; }
+.meta { color: var(--muted); font-size: var(--text-sm); line-height: 1.6; }
+.description { white-space: pre-wrap; line-height: 1.6; }
+.badge { justify-self: start; display: inline-block; padding: 4px 10px; border-radius: var(--radius-pill); background: var(--primary-soft); color: var(--primary); font-size: var(--text-sm); font-weight: 600; }
+.debt { background: var(--danger-soft); color: var(--danger); }
+.success { color: var(--success); }
+.pagination { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: var(--text-sm); }
+.pagination button { min-height: 44px; }

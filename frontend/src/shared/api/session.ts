@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { api, ApiError } from './client';
 
 export interface StudentProfile { full_name: string; group: string; faculty: string; programme: string; course: number }
-export interface Me { id: number; username: string; student_profile: null | StudentProfile }
+export interface Me {
+  id: number; username: string; student_profile: null | StudentProfile; roles: string[];
+  teacher_profile: null | {full_name: string; faculty: string; is_active: boolean};
+}
 
 export type Session = { kind: 'loading' } | { kind: 'signed-in'; user: Me } | { kind: 'anonymous' } | { kind: 'error' };
 
@@ -26,7 +29,7 @@ export function useSession(): Session {
 }
 
 export function displayName(user: Me): string {
-  return user.student_profile?.full_name ?? user.username;
+  return user.student_profile?.full_name ?? user.teacher_profile?.full_name ?? user.username;
 }
 
 /** Two letters for an avatar: first letters of the surname and first name. */

@@ -6,6 +6,8 @@ export interface AppModule {
   path: string;
   label: string;
   Component: ComponentType;
+  /** Navigation visibility only. Every API still checks the role and data scope. */
+  roles?: readonly string[];
 }
 
 export function validateModules(modules: readonly AppModule[]): void {

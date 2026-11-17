@@ -38,7 +38,9 @@ export function App() {
     </header>
     <div className={styles.layout}>
       <nav className={styles.navigation} aria-label="Основная навигация">
-        {modules.map(({ id, path, label }) => {
+        {modules.filter(module => !module.roles || (session.kind === 'signed-in'
+          && module.roles.some(role => session.user.roles.includes(role))))
+          .map(({ id, path, label }) => {
           const ModuleIcon = moduleIcons[id] ?? DotIcon;
           return <NavLink key={id} to={path} end><ModuleIcon /><span>{label}</span></NavLink>;
         })}
