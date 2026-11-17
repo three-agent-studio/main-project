@@ -56,7 +56,7 @@ paths:
         schema:
           type: string
           format: date
-        description: Первый день включительно
+        description: Первый день включительно, 2000–2100 годы
       - name: page
         required: false
         in: query
@@ -68,7 +68,7 @@ paths:
         schema:
           type: string
           format: date
-        description: Последний день включительно
+        description: Последний день включительно, 2000–2100 годы
       tags:
       - lessons
       security:

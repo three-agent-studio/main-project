@@ -287,3 +287,36 @@ def test_admin_edits_use_history_and_reject_stale_forms(schedule):
     lesson.refresh_from_db()
     assert lesson.room == "ДЕМО-303"
     assert LessonChange.objects.filter(lesson=lesson).count() == 1
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"from": "0001-01-01", "to": "0001-01-07"},
+        {"from": "0001-01-02"},
+        {"from": "1999-12-31"},
+        {"from": "2101-01-01"},
+        {"to": "0001-01-01"},
+        {"from": "2100-12-31"},
+    ],
+)
+def test_unsupported_dates_are_400_not_timezone_overflow(schedule, params):
+    response = schedule.client.get("/api/v1/lessons/", params)
+    assert response.status_code == 400
+    assert response.json()["error"]["status"] == 400
+
+
+@pytest.mark.parametrize("day", ["2000-01-01", "2100-12-31"])
+def test_supported_date_boundaries_can_be_queried(schedule, day):
+    response = schedule.client.get("/api/v1/lessons/", {"from": day, "to": day})
+    assert response.status_code == 200 and response.json()["count"] == 0
+
+
+def test_student_history_omits_internal_group_keys_without_mutating_event(schedule):
+    lesson = schedule.lessons[0]
+    change_lesson(lesson.pk, changes={"room": "ДЕМО-УТОЧНЕНИЕ"}, reason="Перенос аудитории")
+    data = schedule.client.get(f"/api/v1/lessons/{lesson.pk}/").json()["last_change"]
+    assert "group_id" not in data["before"] and "group_id" not in data["after"]
+    assert data["after"]["room"] == "ДЕМО-УТОЧНЕНИЕ"
+    event = LessonChange.objects.get(lesson=lesson)
+    assert event.before["group_id"] == event.after["group_id"] == lesson.group_id

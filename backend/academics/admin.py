@@ -8,7 +8,15 @@ from .services import EDITABLE_FIELDS, change_lesson
 
 
 class LessonAdminForm(forms.ModelForm):
-    change_reason = forms.CharField(label="Причина изменения", max_length=500, required=False)
+    change_reason = forms.CharField(
+        label="Причина изменения",
+        max_length=500,
+        required=False,
+        help_text=(
+            "Этот текст виден студентам группы. "
+            "Не указывайте внутренние заметки и персональные данные."
+        ),
+    )
     expected_revision = forms.IntegerField(widget=forms.HiddenInput, required=False)
 
     class Meta:

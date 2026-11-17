@@ -9,7 +9,12 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView
 from accounts.access import require_student
 
 from .models import Lesson, LessonChange
-from .serializers import LessonPeriodSerializer, LessonSerializer
+from .serializers import (
+    SCHEDULE_MAX_DATE,
+    SCHEDULE_MIN_DATE,
+    LessonPeriodSerializer,
+    LessonSerializer,
+)
 
 
 def student_lessons(user):
@@ -33,8 +38,12 @@ class LessonListView(ListAPIView):
 
     @extend_schema(
         parameters=[
-            OpenApiParameter("from", OpenApiTypes.DATE, description="Первый день включительно"),
-            OpenApiParameter("to", OpenApiTypes.DATE, description="Последний день включительно"),
+            OpenApiParameter(
+                "from", OpenApiTypes.DATE, description="Первый день включительно, 2000–2100 годы"
+            ),
+            OpenApiParameter(
+                "to", OpenApiTypes.DATE, description="Последний день включительно, 2000–2100 годы"
+            ),
         ],
         description="Расписание своей группы; по умолчанию текущая неделя в часовом поясе вуза.",
     )
@@ -59,7 +68,11 @@ class LessonListView(ListAPIView):
             end = params.validated_data.get("to_date") or start + timedelta(days=6)
         except OverflowError:
             raise ValidationError({"period": "Дата выходит за допустимый диапазон."}) from None
-        if end < start or (end - start).days > 30 or end.year >= 9999:
+        if not SCHEDULE_MIN_DATE <= start <= end <= SCHEDULE_MAX_DATE:
+            raise ValidationError(
+                {"period": "Укажите даты по порядку в диапазоне 2000–2100 годов."}
+            )
+        if (end - start).days > 30:
             raise ValidationError({"period": "Укажите период от 1 до 31 дня."})
         zone = timezone.get_default_timezone()
         lower = datetime.combine(start, time.min, tzinfo=zone)
