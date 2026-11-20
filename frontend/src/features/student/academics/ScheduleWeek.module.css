@@ -1,10 +1,11 @@
 /* Timetable set as a typographic table: day on the left, lessons as rows
    (time | subject and teacher | room). Hairlines separate, nothing is boxed twice. */
-.intro { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:var(--space-2) var(--space-4); margin-bottom:var(--space-6); }
+.intro { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:var(--space-2) var(--space-4); margin-bottom:var(--space-5); }
 .range { margin:0; font-size:var(--text-lg); font-weight:650; font-variant-numeric:tabular-nums; }
 .zone { color:var(--ink-soft); font-size:var(--text-sm); }
 
-.days { display:grid; border-top:1px solid var(--ink); }
+.days { display:grid; }
+.day:first-child { padding-top:0; }
 .day { display:grid; grid-template-columns:minmax(0,3fr) minmax(0,9fr); gap:var(--space-6); padding:var(--space-5) 0; border-bottom:1px solid var(--line); min-width:0; }
 .dayHeader { display:flex; flex-direction:column; align-items:flex-start; gap:var(--space-1); }
 .dayHeader h3 { margin:0; font-size:var(--text-lg); line-height:1.3; }

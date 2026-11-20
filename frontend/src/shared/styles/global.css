@@ -32,6 +32,9 @@ time, .tabular { font-variant-numeric:tabular-nums; }
 
 .notice { padding:var(--space-3) var(--space-4); border-radius:var(--radius); border-left:3px solid var(--primary); background:var(--primary-soft); color:var(--ink); }
 .notice-error { border-left-color:var(--danger); background:var(--danger-soft); color:var(--danger); }
+/* An action inside a notice ("Повторить") always sits on its own line. */
+.notice p { margin:0; }
+.notice button { display:flex; margin-top:var(--space-3); }
 
 .skip-link { position:absolute; top:-100px; left:var(--space-4); background:var(--surface); padding:var(--space-3); z-index:30; border-radius:var(--radius); }
 .skip-link:focus { top:var(--space-2); }

@@ -27,3 +27,23 @@
   .details dd { margin:0; text-align:right; }
   .empty { padding:var(--space-4); }
 }
+
+/* Below the card: shortcuts and the account, side by side on the grid. */
+.columns { display:grid; grid-template-columns:minmax(0,7fr) minmax(0,5fr); gap:var(--space-8); align-items:start; }
+.section { min-width:0; border-top:1px solid var(--ink); padding-top:var(--space-4); }
+.section h2 { margin-bottom:var(--space-4); }
+.group span.role { font-size:var(--text-xl); letter-spacing:-.01em; }
+.shortcuts { list-style:none; margin:0; padding:0; }
+.shortcuts li { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:var(--space-1) var(--space-4); align-items:center; padding:var(--space-4) 0; border-bottom:1px solid var(--line); }
+.shortcuts li:first-child { padding-top:0; }
+.shortcuts a, .shortcutTitle { font-weight:650; }
+.shortcuts a { color:var(--ink); text-decoration:underline; text-decoration-color:var(--line-control); }
+.shortcuts a:hover { color:var(--primary-hover); text-decoration-color:currentColor; }
+.shortcutText { grid-column:1; color:var(--ink-soft); font-size:var(--text-sm); }
+.shortcuts li > span:nth-child(3) { grid-column:2; grid-row:1 / span 2; }
+.facts { margin:0 0 var(--space-5); }
+.facts div { display:flex; justify-content:space-between; gap:var(--space-4); padding:var(--space-3) 0; border-bottom:1px solid var(--line); }
+.facts div:first-child { padding-top:0; }
+.facts dt { color:var(--ink-soft); font-size:var(--text-sm); }
+.facts dd { margin:0; font-weight:600; text-align:right; overflow-wrap:anywhere; }
+@media (max-width:1024px) { .columns { grid-template-columns:minmax(0,1fr); } }
