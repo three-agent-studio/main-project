@@ -1,36 +1,40 @@
 * { box-sizing:border-box; }
 html, body { overflow-x:clip; }
-body { margin:0; min-width:320px; font-size:var(--text-base); line-height:1.55; }
-a { color:var(--primary); text-underline-offset:3px; }
+body { margin:0; min-width:320px; font-size:var(--text-base); line-height:var(--leading); }
+a { color:var(--primary); text-underline-offset:3px; text-decoration-thickness:1px; }
 a:hover { color:var(--primary-hover); }
 button,input,select,textarea { font:inherit; color:inherit; }
 
-/* Primary button. Secondary/quiet variants are opt-in classes, so plain <button>
-   keeps working in feature code that has not been restyled yet. */
+/* Buttons. Primary is the default so plain <button> stays usable; secondary is opt-in.
+   Disabled uses fill, ink and cursor, not opacity alone. */
 button,.button {
   display:inline-flex; align-items:center; justify-content:center; gap:var(--space-2);
-  min-height:44px; padding:10px 18px; border:1px solid transparent; border-radius:var(--radius);
-  background:var(--primary); color:#fff; font-weight:600; text-decoration:none; cursor:pointer;
-  transition:background-color .15s, border-color .15s, color .15s;
+  min-height:44px; padding:var(--space-2) var(--space-5); border:1px solid transparent; border-radius:var(--radius);
+  background:var(--primary); color:var(--on-primary); font-weight:600; line-height:1.25; text-decoration:none; cursor:pointer;
+  transition:background-color var(--duration) var(--ease), border-color var(--duration) var(--ease), color var(--duration) var(--ease);
 }
-button:hover,.button:hover { background:var(--primary-hover); color:#fff; }
+button:hover,.button:hover { background:var(--primary-hover); color:var(--on-primary); }
+button:active,.button:active { background:var(--primary-active); }
 .button-secondary { background:var(--surface); color:var(--ink); border-color:var(--line-control); }
-.button-secondary:hover { background:var(--primary-soft); color:var(--primary-hover); border-color:var(--primary); }
-button:disabled { opacity:.6; cursor:wait; }
-:focus-visible { outline:3px solid var(--primary); outline-offset:3px; }
+.button-secondary:hover { background:var(--primary-soft); color:var(--primary-ink); border-color:var(--primary); }
+.button-secondary:active { background:var(--surface-sunken); color:var(--primary-ink); }
+button:disabled, button:disabled:hover { background:var(--disabled-fill); color:var(--disabled-ink); border-color:transparent; cursor:not-allowed; }
+:focus-visible { outline:3px solid var(--primary); outline-offset:2px; }
 
-h1,h2,h3 { color:var(--ink); text-wrap:balance; overflow-wrap:break-word; }
-h1 { font-size:var(--text-2xl); line-height:1.12; letter-spacing:-.02em; font-weight:750; margin:0 0 var(--space-3); }
-h2 { font-size:var(--text-lg); line-height:1.3; font-weight:680; margin:0 0 var(--space-2); }
+/* Type: flush left, balanced display heads, tabular figures for times and grades. */
+h1,h2,h3,h4 { color:var(--ink); text-wrap:balance; overflow-wrap:break-word; }
+h1 { font-size:var(--text-2xl); line-height:var(--leading-tight); letter-spacing:var(--tracking-tight); font-weight:700; margin:0 0 var(--space-3); }
+h2 { font-size:var(--text-lg); line-height:1.3; letter-spacing:-.01em; font-weight:650; margin:0 0 var(--space-3); }
+h3 { font-size:var(--text-base); line-height:1.35; font-weight:650; margin:0 0 var(--space-2); }
 p { margin:0 0 var(--space-4); }
 img { max-width:100%; }
+time, .tabular { font-variant-numeric:tabular-nums; }
 
-/* role="status"/"alert" messages share one calm, readable look. */
-.notice { padding:var(--space-3) var(--space-4); border-radius:var(--radius); background:var(--marker-soft); }
-.notice-error { background:var(--danger-soft); color:var(--danger); }
+.notice { padding:var(--space-3) var(--space-4); border-radius:var(--radius); border-left:3px solid var(--primary); background:var(--primary-soft); color:var(--ink); }
+.notice-error { border-left-color:var(--danger); background:var(--danger-soft); color:var(--danger); }
 
-.skip-link { position:absolute; top:-100px; left:16px; background:var(--surface); padding:12px; z-index:30; border-radius:var(--radius-sm); }
-.skip-link:focus { top:8px; }
+.skip-link { position:absolute; top:-100px; left:var(--space-4); background:var(--surface); padding:var(--space-3); z-index:30; border-radius:var(--radius); }
+.skip-link:focus { top:var(--space-2); }
 .sr-only { position:absolute; width:1px; height:1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
 
 @media (prefers-reduced-motion: reduce) {

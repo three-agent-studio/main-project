@@ -66,10 +66,8 @@ function ProfileCard({ user }: { user: Me }) {
   return <article className={styles.card} aria-labelledby="profile-name">
     <div className={styles.cardTop}>
       <span className={styles.avatar} aria-hidden="true">{initials(name)}</span>
-      <div className={styles.identity}>
-        <h2 id="profile-name">{name}</h2>
-        {profile && <p className={styles.group}>группа <span>{profile.group}</span></p>}
-      </div>
+      <h2 id="profile-name" className={styles.name}>{name}</h2>
+      {profile && <p className={styles.group}><span className={styles.groupLabel}>Группа</span><span>{profile.group}</span></p>}
     </div>
     {profile
       ? <dl className={styles.details}>

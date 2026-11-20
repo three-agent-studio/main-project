@@ -1,14 +1,16 @@
 import { Suspense, useEffect, type ComponentType } from 'react';
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router';
 import { displayName, initials, useSession } from '../shared/api/session';
-import { CapIcon, DotIcon, HomeIcon, UserIcon } from '../shared/ui/icons';
+import { BoardIcon, CalendarIcon, CapIcon, DotIcon, HomeIcon, UserIcon } from '../shared/ui/icons';
 import { Page } from '../shared/ui/Page';
 import { modules } from './modules';
 import styles from './App.module.css';
 
 // Icons are presentation, so they stay in the shell instead of the module contract.
 // A module without an entry gets a neutral dot and still works.
-const moduleIcons: Record<string, ComponentType> = { home: HomeIcon, profile: UserIcon };
+const moduleIcons: Record<string, ComponentType> = {
+  home: HomeIcon, profile: UserIcon, academics: CalendarIcon, teaching: BoardIcon,
+};
 
 export function App() {
   const { pathname } = useLocation();
@@ -40,9 +42,14 @@ export function App() {
       <nav className={styles.navigation} aria-label="Основная навигация">
         {modules.filter(module => !module.roles || (session.kind === 'signed-in'
           && module.roles.some(role => session.user.roles.includes(role))))
-          .map(({ id, path, label }) => {
+          .map(({ id, path, label, shortLabel }) => {
           const ModuleIcon = moduleIcons[id] ?? DotIcon;
-          return <NavLink key={id} to={path} end><ModuleIcon /><span>{label}</span></NavLink>;
+          // Only one label is rendered visible per breakpoint; the hidden one is display:none,
+          // so it never doubles the accessible name.
+          return <NavLink key={id} to={path} end><ModuleIcon />
+            <span className={shortLabel ? styles.longLabel : undefined}>{label}</span>
+            {shortLabel && <span className={styles.shortLabel}>{shortLabel}</span>}
+          </NavLink>;
         })}
       </nav>
       <main id="main-content" tabIndex={-1} className={styles.main}>

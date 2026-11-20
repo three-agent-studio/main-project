@@ -5,6 +5,8 @@ export interface AppModule {
   id: string;
   path: string;
   label: string;
+  /** Optional short name for the phone tab bar, where width is tight. */
+  shortLabel?: string;
   Component: ComponentType;
   /** Navigation visibility only. Every API still checks the role and data scope. */
   roles?: readonly string[];

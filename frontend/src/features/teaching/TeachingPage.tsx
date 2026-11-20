@@ -5,7 +5,9 @@ import { dateLabel, errorMessage, kindNames, localInput, statusNames, useApiPage
   type Activity, type ActivityKind, type Assignment, type Learner, type Result, type ResultStatus } from '../../shared/academics/api';
 import { Pagination } from '../../shared/academics/Pagination';
 import styles from '../../shared/academics/Study.module.css';
+import { Badge } from '../../shared/ui/Badge';
 import { Card } from '../../shared/ui/Card';
+import { EmptyState } from '../../shared/ui/EmptyState';
 import { Page } from '../../shared/ui/Page';
 
 export default function TeachingPage() {
@@ -30,10 +32,12 @@ function TeacherWorkspace() {
     <p className={styles.meta}>Дата и время отображаются в часовом поясе вашего устройства. Выставление результатов доступно только для назначенных вам групп и дисциплин.</p>
     <Card title="Мои дисциплины">
       {courses.loading && <p role="status">Загрузка назначений…</p>}
-      {courses.error && <p role="alert">{courses.error}</p>}
+      {courses.error && <p role="alert" className="notice notice-error">{courses.error}</p>}
       {courses.data && <>
-        {!courses.data.count && <p>Назначений пока нет. Обратитесь к администратору.</p>}
-        <ul>{courses.data.results.map(course => <li key={course.id}>{course.subject} — {course.group_name}, {course.term}</li>)}</ul>
+        {!courses.data.count && <EmptyState title="Назначений пока нет">Дисциплины и группы назначает администратор проекта.</EmptyState>}
+        <ul className={styles.courses}>{courses.data.results.map(course => <li key={course.id}>
+          <strong>{course.subject}</strong><span>{course.group_name}</span><span className={styles.subject}>{course.term}</span>
+        </li>)}</ul>
         <Pagination data={courses.data} page={courses.page} setPage={courses.setPage} />
       </>}
     </Card>
@@ -44,20 +48,27 @@ function TeacherWorkspace() {
     </Card>}
     <Card title="Мои задания и зачёты">
       {activities.loading && <p role="status">Загрузка работ…</p>}
-      {activities.error && <div role="alert">{activities.error}<button onClick={activities.reload}>Повторить</button></div>}
-      <div className={styles.stack}>{activities.data?.results.map(activity => <article className={styles.item} key={activity.id}>
-        <span className={styles.badge}>{kindNames[activity.kind]}{activity.is_cancelled ? ' — отменено' : ''}</span>
+      {activities.error && <div role="alert" className="notice notice-error">{activities.error} <button onClick={activities.reload}>Повторить</button></div>}
+      <div className={styles.list}>{activities.data?.results.map(activity => <article className={styles.item} key={activity.id}>
+        <div className={styles.itemHead}>
+          <Badge>{kindNames[activity.kind]}</Badge>
+          {activity.is_cancelled && <Badge tone="danger">Отменено</Badge>}
+        </div>
         <h3>{activity.title}</h3>
-        <p>{activity.subject} — {activity.group_name}</p>
-        <p className={styles.meta}>{activity.term}. Начало: {dateLabel(activity.scheduled_at)}. Срок: {dateLabel(activity.due_at)}. {activity.room}</p>
-        <p className={styles.description}>{activity.description}</p>
+        <p className={styles.subject}>{activity.subject}, {activity.group_name}, {activity.term}</p>
+        <dl className={styles.facts}>
+          {activity.scheduled_at && <div><dt>Начало</dt><dd>{dateLabel(activity.scheduled_at)}</dd></div>}
+          {activity.due_at && <div><dt>Срок</dt><dd>{dateLabel(activity.due_at)}</dd></div>}
+          {activity.room && <div><dt>Аудитория</dt><dd>{activity.room}</dd></div>}
+        </dl>
+        {activity.description && <p className={styles.description}>{activity.description}</p>}
         <div className={styles.actions}>
           <button onClick={() => setSelected(activity)}>Ведомость: {activity.title}</button>
           <button className="button-secondary" onClick={() => setEditing(activity)}>Изменить: {activity.title}</button>
         </div>
       </article>)}</div>
       {activities.data && <>
-        {!activities.data.count && <p>Создайте первую работу с помощью формы выше.</p>}
+        {!activities.data.count && <EmptyState title="Работ пока нет">Создайте первое задание или зачёт с помощью формы выше.</EmptyState>}
         <Pagination data={activities.data} page={activities.page} setPage={activities.setPage} />
       </>}
     </Card>
@@ -121,14 +132,14 @@ function Roster({ activity }: {activity: Activity}) {
   const roster = useApiPage<Learner>(`/teaching/activities/${activity.id}/students/`);
   return <Card title={`Ведомость: ${activity.title}`}>
     <p className={styles.meta}>{activity.subject} — {activity.group_name}. Каждый результат сохраняется отдельно. Оценка 2, «Не зачтено» и «Задолженность» считаются долгом; успешная пересдача закрывает его.</p>
-    {activity.is_cancelled && <p role="alert">Работа отменена. Выставление результатов отключено.</p>}
-    <button type="button" className="button-secondary" onClick={roster.reload}>Обновить ведомость</button>
+    {activity.is_cancelled && <p role="alert" className="notice notice-error">Работа отменена. Выставление результатов отключено.</p>}
+    <div className={styles.toolbar}><button type="button" className="button-secondary" onClick={roster.reload}>Обновить ведомость</button></div>
     {roster.loading && <p role="status">Загрузка студентов…</p>}
-    {roster.error && <p role="alert">{roster.error}</p>}
-    <div className={styles.stack}>{roster.data?.results.map(student => <GradeRow key={student.id}
+    {roster.error && <p role="alert" className="notice notice-error">{roster.error}</p>}
+    <div className={styles.list}>{roster.data?.results.map(student => <GradeRow key={student.id}
       student={student} activity={activity} />)}</div>
     {roster.data && <>
-      {!roster.data.count && <p>В этой группе пока нет студентов.</p>}
+      {!roster.data.count && <EmptyState title="В группе пока нет студентов" />}
       <Pagination data={roster.data} page={roster.page} setPage={roster.setPage} />
     </>}
   </Card>;
@@ -154,7 +165,7 @@ function GradeRow({ student, activity }: {student: Learner; activity: Activity})
   }
   return <form className={styles.item} onSubmit={submit} aria-label={`Результат: ${student.full_name}`}>
     <h3>{student.full_name}</h3>
-    {result?.is_debt && <span className={`${styles.badge} ${styles.debt}`}>Задолженность</span>}
+    {result?.is_debt && <Badge tone="danger">Задолженность</Badge>}
     <div className={styles.fields}>
       {/* Explicit labels keep the field name independent of option text and saved comments. */}
       <div className={styles.field}><label htmlFor={`${fieldId}-status`}>Результат</label><select id={`${fieldId}-status`} required value={status} onChange={event => setStatus(event.target.value as ResultStatus)}>
