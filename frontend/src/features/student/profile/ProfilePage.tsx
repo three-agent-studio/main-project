@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { api, ApiError } from '../../../shared/api/client';
 import { displayName, initials, type Me } from '../../../shared/api/session';
+import { Badge } from '../../../shared/ui/Badge';
 import { Card } from '../../../shared/ui/Card';
 import { Page } from '../../../shared/ui/Page';
 import styles from './ProfilePage.module.css';
@@ -49,12 +50,19 @@ export default function ProfilePage() {
     </div>}
     {state.kind === 'ready' && <>
       {state.user.teacher_profile && !state.user.student_profile
-        ? <Card title={state.user.teacher_profile.full_name}>
-          <p>Преподаватель. {state.user.teacher_profile.faculty}</p>
-          <Link className="button" to="/teaching">Открыть кабинет преподавателя</Link>
-        </Card> : <ProfileCard user={state.user} />}
-      {logoutError && <p role="alert" className="notice notice-error">Не удалось выйти. Повторите попытку.</p>}
-      <button className="button-secondary" onClick={logout}>Выйти</button>
+        ? <TeacherCard user={state.user} /> : <ProfileCard user={state.user} />}
+      <div className={styles.columns}>
+        <Shortcuts user={state.user} />
+        <section className={styles.section} aria-labelledby="account-title">
+          <h2 id="account-title">Учётная запись</h2>
+          <dl className={styles.facts}>
+            <div><dt>Логин</dt><dd>{state.user.username}</dd></div>
+            <div><dt>Сеанс</dt><dd>Активен в этом браузере</dd></div>
+          </dl>
+          {logoutError && <p role="alert" className="notice notice-error">Не удалось выйти. Повторите попытку.</p>}
+          <button className="button-secondary" onClick={logout}>Выйти</button>
+        </section>
+      </div>
     </>}
   </Page>;
 }
@@ -66,10 +74,8 @@ function ProfileCard({ user }: { user: Me }) {
   return <article className={styles.card} aria-labelledby="profile-name">
     <div className={styles.cardTop}>
       <span className={styles.avatar} aria-hidden="true">{initials(name)}</span>
-      <div className={styles.identity}>
-        <h2 id="profile-name">{name}</h2>
-        {profile && <p className={styles.group}>группа <span>{profile.group}</span></p>}
-      </div>
+      <h2 id="profile-name" className={styles.name}>{name}</h2>
+      {profile && <p className={styles.group}><span className={styles.groupLabel}>Группа</span><span>{profile.group}</span></p>}
     </div>
     {profile
       ? <dl className={styles.details}>
@@ -78,4 +84,45 @@ function ProfileCard({ user }: { user: Me }) {
       </dl>
       : <p className={styles.empty}>Для этой учётной записи ещё нет профиля студента. Его создаёт сотрудник деканата.</p>}
   </article>;
+}
+
+/** Same cover as the student card, so every role gets one recognisable identity block. */
+function TeacherCard({ user }: { user: Me }) {
+  const name = displayName(user);
+  const teacher = user.teacher_profile!;
+  return <article className={styles.card} aria-labelledby="profile-name">
+    <div className={styles.cardTop}>
+      <span className={styles.avatar} aria-hidden="true">{initials(name)}</span>
+      <h2 id="profile-name" className={styles.name}>{name}</h2>
+      <p className={styles.group}><span className={styles.groupLabel}>Роль</span><span className={styles.role}>Преподаватель</span></p>
+    </div>
+    <dl className={styles.details}>
+      <div><dt>Факультет</dt><dd>{teacher.faculty}</dd></div>
+      <div><dt>Доступ к ведомостям</dt><dd>{teacher.is_active ? 'Открыт' : 'Приостановлен'}</dd></div>
+    </dl>
+  </article>;
+}
+
+type Shortcut = { title: string; text: string; to?: string };
+
+/** Where people usually go next from their profile. Unbuilt sections are shown honestly. */
+function Shortcuts({ user }: { user: Me }) {
+  const items: Shortcut[] = user.roles.includes('student') ? [
+    { title: 'Расписание на неделю', text: 'Пары, аудитории и переносы.', to: '/academics' },
+    { title: 'Оценки и задолженности', text: 'Результаты работ и что пересдать.', to: '/academics' },
+    { title: 'Заявки и справки', text: 'Справка об обучении без очереди.' },
+  ] : user.roles.includes('teacher') ? [
+    { title: 'Кабинет преподавателя', text: 'Задания, зачёты и ведомости групп.', to: '/teaching' },
+  ] : [];
+  if (!items.length) return null;
+  return <section className={styles.section} aria-labelledby="shortcuts-title">
+    <h2 id="shortcuts-title">Быстрые переходы</h2>
+    <ul className={styles.shortcuts}>
+      {items.map(item => <li key={item.title}>
+        {item.to ? <Link to={item.to}>{item.title}</Link> : <span className={styles.shortcutTitle}>{item.title}</span>}
+        <span className={styles.shortcutText}>{item.text}</span>
+        {!item.to && <Badge>В разработке</Badge>}
+      </li>)}
+    </ul>
+  </section>;
 }

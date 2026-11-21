@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react';
 import { Link } from 'react-router';
 import { displayName, firstName, useSession } from '../../shared/api/session';
+import { Badge } from '../../shared/ui/Badge';
 import { BellIcon, CalendarIcon, GradesIcon, RequestIcon } from '../../shared/ui/icons';
 import styles from './HomePage.module.css';
 
@@ -28,10 +29,16 @@ export default function HomePage() {
     <section className={styles.welcome} aria-labelledby="home-title">
       <h1 id="home-title">{user ? `${hello}, ${firstName(displayName(user))}` : `${hello}!`}</h1>
       <p className={styles.lead}>Здесь собрано всё, что связано с учёбой: от расписания до справок из деканата.</p>
-      {user
-        ? <Link className="button" to={user.roles.includes('teacher') && !user.roles.includes('student') ? '/teaching' : '/profile'}>
-          {user.roles.includes('teacher') && !user.roles.includes('student') ? 'Открыть кабинет преподавателя' : 'Открыть мой профиль'}</Link>
-        : session.kind !== 'loading' && <a className="button" href="/auth/login/">Войти в кабинет</a>}
+      <div className={styles.actions}>
+        {user?.roles.includes('student') && <>
+          <Link className="button" to="/academics">Открыть расписание и оценки</Link>
+          <Link className="button button-secondary" to="/profile">Мой профиль</Link>
+        </>}
+        {user && !user.roles.includes('student') && (user.roles.includes('teacher')
+          ? <Link className="button" to="/teaching">Открыть кабинет преподавателя</Link>
+          : <Link className="button" to="/profile">Открыть мой профиль</Link>)}
+        {!user && session.kind !== 'loading' && <a className="button" href="/auth/login/">Войти в кабинет</a>}
+      </div>
     </section>
 
     <section aria-labelledby="upcoming-title">
@@ -40,7 +47,7 @@ export default function HomePage() {
         {upcoming.map(({ title, text, Icon, ready }) => <li key={title}>
           <span className={styles.icon}><Icon /></span>
           <div><h3>{ready && user?.roles.includes('student') ? <Link to="/academics">{title}</Link> : title}</h3><p>{text}</p></div>
-          <span className={styles.status}>{ready ? 'Доступно' : 'В разработке'}</span>
+          <Badge tone={ready ? 'success' : 'neutral'}>{ready ? 'Доступно' : 'В разработке'}</Badge>
         </li>)}
       </ul>
     </section>

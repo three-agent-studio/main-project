@@ -17,3 +17,4 @@ export const RequestIcon = (p: IconProps) => <Icon {...p}><path d="M7 3.5h7l4 4v
 export const BellIcon = (p: IconProps) => <Icon {...p}><path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 5 2 6 2 6.5h-15c0-.5 2-1.5 2-6.5" /><path d="M10 19.5a2.2 2.2 0 0 0 4 0" /></Icon>;
 export const DotIcon = (p: IconProps) => <Icon {...p}><circle cx="12" cy="12" r="3" /></Icon>;
 export const CapIcon = (p: IconProps) => <Icon {...p}><path d="m3 9.5 9-4.5 9 4.5-9 4.5z" /><path d="M7 11.5v4.5c3 2.2 7 2.2 10 0v-4.5M21 9.5v5.5" /></Icon>;
+export const BoardIcon = (p: IconProps) => <Icon {...p}><rect x="3.5" y="4.5" width="17" height="11" rx="1.5" /><path d="M8 19.5l2-4M16 19.5l-2-4M7.5 9h5M7.5 12h8" /></Icon>;

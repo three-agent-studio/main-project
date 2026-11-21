@@ -46,13 +46,13 @@
 
 ### 2026-11-13 — Просмотр интерфейса на Windows без Docker
 - Контекст: у №3 Windows без Docker и PostgreSQL, а для редизайна нужно видеть вход, главную и профиль с данными.
-- Правило: держать отдельный settings-модуль вне репозитория (`from config.settings.development import *` + SQLite-файл), подключать через `PYTHONPATH` и `DJANGO_SETTINGS_MODULE`, выполнить `migrate` и `tests/seed_browser.py`, затем `runserver` + `npm run dev`. В репозиторий не коммитить, production по-прежнему только PostgreSQL. На Windows 5 тестов `test_preview_launcher.py` падают и без изменений (ssh/`nul`/select); это не регрессия.
-- Подтверждение: ветка `design/warm-ui`; вход, главная и профиль проверены на 360 и 1280 px; остальные 62 backend-теста проходят.
+- Правило: держать отдельный settings-модуль вне репозитория (`from config.settings.development import *` + SQLite-файл), подключать через `PYTHONPATH` и `DJANGO_SETTINGS_MODULE`, выполнить `migrate` и `tests/seed_browser.py` (студенты, преподаватель, инженерное расписание), затем `runserver` (без `--noreload`, иначе шаблоны кешируются) + `npm run dev`. В репозиторий не коммитить, production по-прежнему только PostgreSQL. На Windows и без изменений падают: 5 тестов `test_preview_launcher.py` (ssh/`nul`/select), 2 теста `test_teacher_provisioning.py` (chmod 0600) и SHA-проверка `npm run test:security` (git с `core.autocrlf=true` переводит `frontend/vendor/picomatch` в CRLF). Это не регрессии; на Linux CI они проходят.
+- Подтверждение: ветки `design/warm-ui` и `design/swiss-ui`; экраны проверены на 360 и 1280 px; остальные backend-тесты проходят.
 
 ### 2026-11-13 — Дизайн-токены живут в двух местах
 - Контекст: страница входа рендерится Django и не может импортировать `frontend/src/shared/styles/tokens.css`.
-- Правило: при смене палитры или шрифта менять и `tokens.css`, и `:root` в `backend/core/static/core/auth/auth.css`. Шрифт Onest хранится в проекте (npm `@fontsource-variable/onest` для React, копия woff2 + `OFL.txt` в `core/static/core/fonts/` для входа), без внешних CDN. Цвета рамок полей и кнопок — `--line-control` (≥3:1), а `--line-strong` только декоративный.
-- Подтверждение: расчёт контраста WCAG для всех пар палитры в ветке `design/warm-ui`.
+- Правило: при смене палитры или шрифта менять и `tokens.css`, и `:root` в `backend/core/static/core/auth/auth.css`. Шрифт (с 2026-11-20 — Inter) хранится в проекте: npm `@fontsource-variable/inter` для React, копия woff2 + `OFL.txt` в `core/static/core/fonts/` для входа, без внешних CDN. Цвета рамок полей и кнопок — `--line-control` (≥3:1), а `--line-strong`/`--line` только декоративные. Статусы показывать через `shared/ui/Badge` словами, цвет лишь дублирует смысл.
+- Подтверждение: расчёт контраста WCAG для всех пар палитры в ветках `design/warm-ui` и `design/swiss-ui`.
 
 ## Непроверенные идеи
 

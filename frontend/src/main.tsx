@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import { App } from './app/App';
 import { ErrorBoundary } from './shared/ui/ErrorBoundary';
-import '@fontsource-variable/onest';
+import '@fontsource-variable/inter';
 import './shared/styles/tokens.css';
 import './shared/styles/global.css';
 

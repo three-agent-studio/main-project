@@ -1,54 +1,73 @@
-/* Shared design vocabulary. Feature owners should not hard-code competing palettes.
-   Direction: violet "ink" (the colour of school ink) for text and actions, a yellow
-   highlighter for "what matters now", and squared exercise-book paper as texture.
-   Keep auth.css (Django login) in sync with these values; it cannot import this file. */
+/* Shared design vocabulary (modern Swiss). Feature code uses these names only;
+   no literal colours, sizes or radii in feature CSS.
+   Principles: one grotesk (Inter), flush-left text, a 12-column grid, hierarchy by
+   size and weight, hairline rules that separate content, one blue accent.
+   Keep backend/core/static/core/auth/auth.css in sync: it cannot import this file. */
 :root {
-  /* Colour */
-  --ink: #2b2350;            /* headings, body text */
-  --ink-soft: #5d5578;       /* secondary text, 7.0:1 on white */
-  --primary: #5232c2;        /* actions, links, focus; white text 7.6:1 */
-  --primary-hover: #42259f;
-  --primary-soft: #efebff;   /* selected nav, quiet fills */
-  --marker: #ffd34d;         /* highlighter: current item, signature stripe */
-  --marker-soft: #fff4cc;
-  --paper: #f7f5fc;          /* page background */
-  --paper-grid: #efebf8;     /* exercise-book squares */
-  --surface: #fff;
-  --line: #e2dcef;
-  --line-strong: #c9c0e0;     /* decorative borders only */
-  --line-control: #8b82a9;    /* borders of inputs and buttons, 3.6:1 (WCAG 1.4.11) */
-  --success: #24704f;
-  --success-soft: #e5f4ec;
-  --danger: #a3242f;
-  --danger-soft: #fdecee;
+  /* Neutrals */
+  --ink: #15171c;            /* text, 17.9:1 on white */
+  --ink-soft: #59606c;       /* secondary text, 6.3:1 on white, 5.8:1 on paper */
+  --paper: #f4f5f7;          /* page background */
+  --surface: #ffffff;        /* panels */
+  --surface-sunken: #eef0f3; /* table heads, quiet fills */
+  --line: #dfe2e8;           /* hairline rules, decorative only */
+  --line-strong: #c4c9d2;    /* decorative emphasis */
+  --line-control: #858b97;   /* input and button borders, >=3:1 (WCAG 1.4.11) */
 
-  /* Legacy aliases used by existing feature code. */
+  /* Accent: one deep blue that keeps white text readable */
+  --primary: #3a63d1;        /* white text 5.4:1 */
+  --primary-hover: #2a4aa8;  /* white text 7.9:1 */
+  --primary-active: #233f90;
+  --primary-ink: #2a4aa8;    /* blue text on soft fills, 6.8:1 */
+  --primary-soft: #e8eefc;   /* selected, info fills */
+  --on-primary: #ffffff;
+  --on-primary-soft: #dbe4fb;/* secondary text on a blue cover, 4.7:1 */
+
+  /* Status (always paired with a text label, never colour alone) */
+  --success: #1b7349; --success-soft: #e6f4ec;
+  --warning: #8a4b00; --warning-soft: #fdf1dc;
+  --danger: #b42d24;  --danger-soft: #fdeceb;
+  --disabled-fill: #e7e9ee; --disabled-ink: #5f6570;
+
+  /* Type: Inter, size and weight carry the hierarchy. */
+  --font: "Inter Variable", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --text-xs: .8125rem;   /* 13 */
+  --text-sm: .875rem;    /* 14 */
+  --text-base: 1rem;     /* 16 */
+  --text-lg: 1.125rem;   /* 18 */
+  --text-xl: 1.5rem;     /* 24 */
+  --text-2xl: clamp(1.875rem, 1.3rem + 2.4vw, 3rem); /* 30 to 48 */
+  --leading-tight: 1.1;
+  --leading: 1.5;
+  --tracking-tight: -.022em;
+
+  /* Shape: small radii; larger surfaces get a slightly larger one. */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
+
+  /* Space: 4px base */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px;
+  --space-6: 24px; --space-8: 32px; --space-10: 40px; --space-12: 48px; --space-16: 64px;
+
+  /* Layout */
+  --content-max: 1200px;
+  --gutter: var(--space-6);
+  --tabbar-height: 64px;
+
+  /* Motion */
+  --ease: cubic-bezier(.2, 0, 0, 1);
+  --duration: .15s;
+
+  /* Legacy aliases kept so older feature code renders while it migrates. */
   --background: var(--paper);
   --text: var(--ink);
   --muted: var(--ink-soft);
   --border: var(--line);
-
-  /* Type: one family, hierarchy through size and weight. */
-  --font: "Onest Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --text-sm: .875rem;
-  --text-base: 1rem;
-  --text-lg: 1.1875rem;
-  --text-xl: clamp(1.5rem, 1.2rem + 1.2vw, 1.875rem);
-  --text-2xl: clamp(1.875rem, 1.4rem + 2.2vw, 2.75rem);
-
-  /* Shape: radius grows with the size of the surface, not one value everywhere. */
-  --radius-sm: 8px;
-  --radius: 12px;
-  --radius-lg: 20px;
-  --radius-pill: 999px;
-
-  /* Space */
-  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px;
-  --space-6: 24px; --space-8: 32px; --space-12: 48px;
-
-  /* Layout */
-  --content-max: 1120px;
-  --tabbar-height: 64px;
+  --marker: var(--primary);
+  --marker-soft: var(--primary-soft);
+  --paper-grid: var(--line);
 
   font-family: var(--font);
   color: var(--ink);
