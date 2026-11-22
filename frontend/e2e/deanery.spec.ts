@@ -16,7 +16,10 @@ test('student submits a request, staff answers, only its owner receives the repl
   const message = `Тестовая справка ${info.project.name} ${Date.now()}`;
   const answer = `Справка готова ${info.project.name} ${Date.now()}`;
   await login(page, 'browser_student', '/profile');
-  await page.getByRole('navigation', {name: 'Основная навигация'}).getByRole('link', {name: 'Заявки'}).click();
+  const navigation = page.getByRole('navigation', {name: 'Основная навигация'});
+  const openRequests = () => navigation.getByRole('link', {name: 'Заявки', exact: true}).click();
+  const openNotices = () => navigation.getByRole('link', {name: /^(Уведомления|Новости)$/}).click();
+  await openRequests();
   await page.getByLabel('Комментарий (необязательно)').fill(message);
   await page.getByRole('button', {name: 'Подать заявку'}).click();
   await expect(page.getByText(message, {exact: true})).toBeVisible();
@@ -37,26 +40,28 @@ test('student submits a request, staff answers, only its owner receives the repl
     await office.close();
   }
 
-  await page.reload({ waitUntil: 'domcontentloaded' });
+  await openNotices();
+  await openRequests();
   const ticket = page.getByRole('article').filter({hasText: message});
   await ticket.getByText('История заявки (3)').click();
   await expect(ticket.getByText(answer)).toBeVisible();
-  await page.getByRole('navigation', {name: 'Основная навигация'})
-    .getByRole('link', {name: /^(Уведомления|Новости)$/}).click();
+  await openNotices();
   const notice = page.getByRole('article').filter({hasText: answer});
   await expect(notice).toBeVisible();
   await notice.getByRole('button', {name: 'Отметить прочитанным'}).click();
   await expect(notice.getByText('Прочитано', {exact: true})).toBeVisible();
-  await page.reload({ waitUntil: 'domcontentloaded' });
+  // A fresh mount discards optimistic state and fetches the persisted receipt.
+  await openRequests();
+  await openNotices();
   await expect(notice.getByText('Прочитано', {exact: true})).toBeVisible();
 
   const other = await browser.newContext({baseURL});
   try {
     const student = await other.newPage();
     await login(student, 'browser_student_other', '/profile');
-    await student.goto('/requests', { waitUntil: 'domcontentloaded' });
+    await student.getByRole('link', {name: 'Заявки', exact: true}).click();
     await expect(student.getByText('Заявок пока нет')).toBeVisible();
-    await student.goto('/notifications', { waitUntil: 'domcontentloaded' });
+    await student.getByRole('link', {name: /^(Уведомления|Новости)$/}).click();
     await expect(student.getByText('Уведомлений пока нет')).toBeVisible();
     await expect(student.getByText(answer)).toHaveCount(0);
   } finally {
@@ -64,7 +69,7 @@ test('student submits a request, staff answers, only its owner receives the repl
   }
 
   // Simulate expiry with the form already open, without submitting any new records.
-  await page.goto('/requests', { waitUntil: 'domcontentloaded' });
+  await openRequests();
   await expect(page.getByRole('button', {name: 'Подать заявку'})).toBeVisible();
   await expect(page.getByText(message, {exact: true})).toBeVisible();
   await page.context().clearCookies({name: 'sessionid'});
