@@ -1,5 +1,6 @@
 import { Suspense, useEffect, type ComponentType } from 'react';
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router';
+import { sessionExpiredEvent } from '../shared/api/client';
 import { displayName, initials, useSession } from '../shared/api/session';
 import { BellIcon, RequestIcon, BoardIcon, CalendarIcon, CapIcon, DotIcon, HomeIcon, UserIcon } from '../shared/ui/icons';
 import { Page } from '../shared/ui/Page';
@@ -16,6 +17,15 @@ const moduleIcons: Record<string, ComponentType> = {
 export function App() {
   const { pathname } = useLocation();
   const session = useSession();
+  useEffect(() => {
+    if (session.kind !== 'signed-in') return;
+    function signInAgain() {
+      const { pathname, search } = window.location;
+      window.location.assign(`/auth/login/?next=${encodeURIComponent(pathname + search)}`);
+    }
+    window.addEventListener(sessionExpiredEvent, signInAgain);
+    return () => window.removeEventListener(sessionExpiredEvent, signInAgain);
+  }, [session.kind]);
   useEffect(() => {
     const module = modules.find((item) => item.path === pathname);
     document.title = `${module?.label ?? 'Страница не найдена'} — Цифровой деканат`;

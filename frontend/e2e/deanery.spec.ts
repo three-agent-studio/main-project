@@ -59,4 +59,13 @@ test('student submits a request, staff answers, only its owner receives the repl
   } finally {
     await other.close();
   }
+
+  // Simulate expiry with the form already open, without submitting any new records.
+  await page.goto('/requests');
+  await expect(page.getByRole('button', {name: 'Подать заявку'})).toBeVisible();
+  await expect(page.getByText(message, {exact: true})).toBeVisible();
+  await page.context().clearCookies({name: 'sessionid'});
+  await page.getByRole('button', {name: 'Подать заявку'}).click();
+  await expect(page).toHaveURL(/\/auth\/login\/\?next=%2Frequests$/);
+
 });

@@ -109,7 +109,12 @@ def test_creation_retry_and_csrf(people):
     assert submit(owner, kind="application", text=" ").status_code == 400
     client = APIClient(enforce_csrf_checks=True)
     client.force_login(owner.user)
-    assert client.post("/api/v1/requests/", {}, format="json").status_code == 403
+    csrf_failure = client.post("/api/v1/requests/", {}, format="json")
+    assert csrf_failure.status_code == 403
+    assert "code" not in csrf_failure.json()["error"]
+    no_session = APIClient().get("/api/v1/requests/")
+    assert no_session.status_code == 403
+    assert no_session.json()["error"]["code"] == "not_authenticated"
 
 
 def test_notice_audiences_due_time_and_private_read_receipts(people):

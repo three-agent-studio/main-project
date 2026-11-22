@@ -27,6 +27,8 @@ OpenAPI генерируется из DRF serializers/views командой `py
 
 - Только JSON для `/api/v1/`; аутентификация — серверная сессия, 403 при отсутствии сессии.
 - Ошибки DRF: `{ "error": { "status": 403, "details": { "detail": "…" } } }`.
+  При отсутствии сессии дополнительно возвращается `error.code=not_authenticated`.
+  Отказ по роли или CSRF не содержит этот код.
   Не-API маршруты (CSRF middleware, HTML login, 404 URL) могут вернуть HTML: клиент учитывает Content-Type.
 - Списки: `{count, next, previous, results}`; по умолчанию 25 записей на страницу.
 - Время — ISO 8601 с часовым поясом, хранение UTC, показ в часовом поясе вуза.
