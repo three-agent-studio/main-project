@@ -234,3 +234,77 @@ def test_contest_seed_is_private_repeatable_and_scope_checked(tmp_path):
     assert signed_in(b).get("/api/v1/assessments/").json()["count"] == 0
     assert signed_in(b).get("/api/v1/requests/").json()["count"] == 1
     assert signed_in(office).get("/api/v1/staff/requests/").json()["count"] == 0
+
+
+def test_attachment_download_is_private_and_tied_to_the_event(people):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    (owner, peer, outsider), staff = people
+    ticket_id = submit(owner).json()["id"]
+    foreign_id = submit(outsider).json()["id"]
+    queue = signed_in(staff)
+    assert transition(queue, ticket_id, "in_progress").status_code == 200
+    content = b"%PDF-1.4\n% demo certificate\n%%EOF"
+    endpoint = f"/api/v1/staff/requests/{ticket_id}/status/"
+    result = queue.post(
+        endpoint,
+        {
+            "status": "ready",
+            "expected_revision": 2,
+            "attachment": SimpleUploadedFile("Справка.pdf", content, "application/pdf"),
+        },
+        format="multipart",
+    )
+    assert result.status_code == 200
+    history = result.json()["history"]
+    assert history[-2]["attachment"] is None
+    ready = history[-1]
+    assert ready["attachment"] == {"filename": "Справка.pdf", "size": len(content)}
+    suffix = f"requests/{ticket_id}/history/{ready['id']}/attachment/"
+    personal_url = f"/api/v1/{suffix}"
+    owner_client = signed_in(owner.user)
+    download = owner_client.get(personal_url)
+    assert download.status_code == 200
+    assert download.content == content
+    assert download["Content-Type"] == "application/octet-stream"
+    assert download["Content-Disposition"].startswith("attachment; filename*=")
+    assert "no-store" in download["Cache-Control"]
+    assert download["X-Content-Type-Options"] == "nosniff"
+    assert queue.get(f"/api/v1/staff/{suffix}").content == content
+    assert owner_client.get(f"/api/v1/staff/{suffix}").status_code == 403
+    assert signed_in(peer.user).get(personal_url).status_code == 404
+    assert signed_in(outsider.user).get(personal_url).status_code == 404
+    assert APIClient().get(personal_url).status_code == 403
+    assert queue.get(f"/api/v1/staff/{suffix.replace(ticket_id, foreign_id)}").status_code == 404
+    assert owner_client.get(personal_url.replace(ready["id"], history[-2]["id"])).status_code == 404
+
+
+@pytest.mark.parametrize(
+    "name,content",
+    [
+        ("page.html", b"<html>test</html>"),
+        ("fake.pdf", b"<?xml version='1.0'?>"),
+        ("huge.pdf", b"%PDF-" + b"0" * (5 * 1024 * 1024)),
+    ],
+)
+def test_invalid_attachment_does_not_update_the_request(people, name, content):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    (owner, _, _), staff = people
+    ticket_id = submit(owner).json()["id"]
+    queue = signed_in(staff)
+    result = queue.post(
+        f"/api/v1/staff/requests/{ticket_id}/status/",
+        {
+            "status": "in_progress",
+            "expected_revision": 1,
+            "attachment": SimpleUploadedFile(name, content),
+        },
+        format="multipart",
+    )
+    assert result.status_code == 400
+    assert "attachment" in result.json()["error"]["details"]
+    ticket = ServiceRequest.objects.get(pk=ticket_id)
+    assert ticket.status == "submitted"
+    assert ticket.revision == 1
+    assert ticket.history.count() == 1

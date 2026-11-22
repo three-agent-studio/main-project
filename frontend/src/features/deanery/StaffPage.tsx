@@ -6,7 +6,7 @@ import styles from './Deanery.module.css';
 import { AnnouncementForm } from './AnnouncementForm';
 import { RolePage } from './RolePage';
 import { TicketList } from './TicketList';
-import type { Ticket } from './tickets';
+import { attachmentExtensions, maxAttachmentBytes, type Ticket } from './tickets';
 
 export default function StaffPage() {
   return <RolePage role="deanery_staff" title="Кабинет деканата" description="Принимайте заявки студентов своего факультета и оставляйте ответы.">
@@ -37,6 +37,7 @@ function Transition({ ticket, onSaved, onRefresh }: {
 }) {
   const commentId = useId();
   const [comment, setComment] = useState('');
+  const [attachment, setAttachment] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [stale, setStale] = useState(false);
@@ -48,13 +49,19 @@ function Transition({ ticket, onSaved, onRefresh }: {
     const sender = (event.nativeEvent as SubmitEvent).submitter;
     const status = sender instanceof HTMLButtonElement ? sender.value : '';
     if (!status) return;
+    if (attachment && attachment.size > maxAttachmentBytes) {
+      setError('Файл должен быть не больше 5 МБ.');
+      return;
+    }
     setSaving(true);
     setError('');
     try {
-      await api<Ticket>(`/staff/requests/${ticket.id}/status/`, {
-        method: 'POST',
-        body: JSON.stringify({ status, expected_revision: ticket.revision, comment }),
-      });
+      const body = new FormData();
+      body.set('status', status);
+      body.set('expected_revision', String(ticket.revision));
+      body.set('comment', comment);
+      if (attachment) body.set('attachment', attachment);
+      await api<Ticket>(`/staff/requests/${ticket.id}/status/`, { method: 'POST', body });
       onSaved();
     } catch (error) {
       setError(errorMessage(error));
@@ -67,9 +74,19 @@ function Transition({ ticket, onSaved, onRefresh }: {
   return <form className={`${form.form} ${styles.actionForm}`} onSubmit={transition}>
     <div className={form.field}>
       <label htmlFor={commentId}>Ответ студенту</label>
-      <textarea id={commentId} value={comment} maxLength={500} disabled={saving || stale}
+      <textarea id={commentId} aria-describedby={`${commentId}-hint`} value={comment} maxLength={500} disabled={saving || stale}
         onChange={event => setComment(event.target.value)} />
-      <span className={form.hint}>При отказе укажите причину.</span>
+      <span id={`${commentId}-hint`} className={form.hint}>Выберите действие ниже, чтобы отправить ответ. При отказе укажите причину.</span>
+    </div>
+    <div className={form.field}>
+      <label htmlFor={`${commentId}-file`}>Приложить файл</label>
+      <input id={`${commentId}-file`} className={styles.fileInput} type="file"
+        accept={attachmentExtensions} disabled={saving || stale}
+        aria-describedby={`${commentId}-file-help`} onChange={event => {
+          setAttachment(event.currentTarget.files?.[0] ?? null);
+          setError('');
+        }} />
+      <span id={`${commentId}-file-help`} className={form.hint}>Один PDF, PNG или JPEG до 5 МБ.</span>
     </div>
     <div className={styles.actions}>
       {pending ? <button value="in_progress" disabled={saving || stale}>Взять в работу</button> : <>

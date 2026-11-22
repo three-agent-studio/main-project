@@ -11,3 +11,12 @@
 .details summary { min-height:44px; display:list-item; padding:var(--space-3) 0; cursor:pointer; color:var(--primary-ink); font-weight:550; }
 .actions { display:flex; flex-wrap:wrap; gap:var(--space-2) var(--space-4); align-items:center; }
 .actionForm { margin:var(--space-3) 0 0; padding:var(--space-4); border:1px solid var(--line); border-radius:var(--radius); }
+
+.refresh { display:flex; justify-content:flex-end; margin-bottom:var(--space-3); }
+.reply { padding:var(--space-3) var(--space-4); margin-top:var(--space-3); border-left:3px solid var(--primary); border-radius:var(--radius-sm); background:var(--primary-soft); }
+.reply strong { color:var(--primary-ink); }
+.reply time { display:block; }
+.reply p { margin-bottom:0; }
+.attachment { display:inline-flex; align-items:center; min-height:44px; font-weight:600; overflow-wrap:anywhere; }
+.actionForm input.fileInput { font-size:var(--text-sm); }
+.fileInput::file-selector-button { margin-right:var(--space-2); padding:var(--space-1) var(--space-2); border:1px solid var(--line-control); border-radius:var(--radius-sm); background:var(--surface); color:var(--ink); font:inherit; }

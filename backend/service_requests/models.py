@@ -54,3 +54,12 @@ class RequestEvent(models.Model):
                 fields=["ticket", "revision"], name="service_request_event_revision"
             )
         ]
+
+
+class RequestAttachment(models.Model):
+    """Private attachment stored with the event and included in PostgreSQL backups."""
+
+    event = models.OneToOneField(RequestEvent, on_delete=models.CASCADE, related_name="attachment")
+    filename = models.CharField(max_length=160)
+    size = models.PositiveIntegerField()
+    content = models.BinaryField()

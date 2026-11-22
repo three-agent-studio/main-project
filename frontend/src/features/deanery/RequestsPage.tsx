@@ -14,7 +14,7 @@ export default function RequestsPage() {
 }
 
 function StudentRequests() {
-  const query = useApiPage<Ticket>('/requests/');
+  const query = useApiPage<Ticket>('/requests/', { refreshEveryMs: 10_000 });
   const [kind, setKind] = useState<TicketKind>('certificate');
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
@@ -69,7 +69,7 @@ function StudentRequests() {
           <span id="request-help" className={form.hint}>Для демонстрации используйте вымышленные данные.</span>
         </div>
         <div>{<button disabled={saving}>{saving ? 'Отправляем…' : 'Подать заявку'}</button>}</div>
-        {sent && <p role="status">Заявка подана. Ответ появится в истории и уведомлениях.</p>}
+        {sent && <p role="status">Заявка подана. Ответ появится в карточке заявки и уведомлениях.</p>}
         {error && <p role="alert" className="notice notice-error">{error}</p>}
       </form>
     </Card>
