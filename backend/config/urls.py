@@ -15,5 +15,7 @@ urlpatterns = [
     path("api/v1/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/v1/", include("accounts.urls")),
     path("api/v1/", include("academics.urls")),
+    path("api/v1/", include("service_requests.urls")),
+    path("api/v1/", include("notifications.urls")),
     # Domain owners add include() here once their API contract is reviewed.
 ]

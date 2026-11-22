@@ -115,6 +115,210 @@ paths:
               schema:
                 $ref: '#/components/schemas/Me'
           description: ''
+  /api/v1/notifications/:
+    get:
+      operationId: notifications_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedNoticeList'
+          description: ''
+  /api/v1/notifications/{key}/read/:
+    post:
+      operationId: notifications_read_create
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/requests/:
+    get:
+      operationId: requests_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - requests
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRequestList'
+          description: ''
+    post:
+      operationId: requests_create
+      tags:
+      - requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Request'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Request'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Request'
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+          description: ''
+  /api/v1/requests/{id}/:
+    get:
+      operationId: requests_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - requests
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+          description: ''
+  /api/v1/staff/announcements/:
+    post:
+      operationId: staff_announcements_create
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FacultyAnnouncement'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FacultyAnnouncement'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FacultyAnnouncement'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacultyAnnouncement'
+          description: ''
+  /api/v1/staff/requests/:
+    get:
+      operationId: staff_requests_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRequestList'
+          description: ''
+  /api/v1/staff/requests/{id}/:
+    get:
+      operationId: staff_requests_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+          description: ''
+  /api/v1/staff/requests/{id}/status/:
+    post:
+      operationId: staff_requests_status_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Transition'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Transition'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Transition'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+          description: ''
   /api/v1/teaching/activities/:
     get:
       operationId: teaching_activities_list
@@ -558,6 +762,28 @@ components:
       - id
       - subject
       - term
+    FacultyAnnouncement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        title:
+          type: string
+          maxLength: 180
+        message:
+          type: string
+          maxLength: 1500
+        published_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - message
+      - published_at
+      - title
     Lesson:
       type: object
       properties:
@@ -707,6 +933,29 @@ components:
       - student_profile
       - teacher_profile
       - username
+    Notice:
+      type: object
+      properties:
+        key:
+          type: string
+        category:
+          type: string
+        headline:
+          type: string
+        body:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        read:
+          type: boolean
+      required:
+      - body
+      - category
+      - headline
+      - key
+      - occurred_at
+      - read
     PaginatedActivityPublicList:
       type: object
       required:
@@ -822,6 +1071,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Lesson'
+    PaginatedNoticeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notice'
+    PaginatedRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Request'
     PaginatedRosterList:
       type: object
       required:
@@ -898,6 +1193,75 @@ components:
           type: integer
           minimum: 1
           writeOnly: true
+    Request:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ServiceRequestKindEnum'
+          readOnly: true
+        text:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ServiceRequestStatusEnum'
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/RequestEvent'
+          readOnly: true
+      required:
+      - created_at
+      - history
+      - id
+      - kind
+      - revision
+      - status
+      - student_name
+      - text
+      - updated_at
+    RequestEvent:
+      type: object
+      properties:
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ServiceRequestStatusEnum'
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        comment:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - comment
+      - created_at
+      - revision
+      - status
     ResultInput:
       type: object
       properties:
@@ -940,6 +1304,26 @@ components:
       - full_name
       - id
       - result
+    ServiceRequestKindEnum:
+      enum:
+      - certificate
+      - application
+      type: string
+      description: |-
+        * `certificate` - Справка об обучении
+        * `application` - Заявление в деканат
+    ServiceRequestStatusEnum:
+      enum:
+      - submitted
+      - in_progress
+      - ready
+      - rejected
+      type: string
+      description: |-
+        * `submitted` - Подана
+        * `in_progress` - В работе
+        * `ready` - Готова
+        * `rejected` - Отклонена
     StaffProfile:
       type: object
       properties:
@@ -996,6 +1380,21 @@ components:
       - faculty
       - full_name
       - is_active
+    Transition:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ServiceRequestStatusEnum'
+        expected_revision:
+          type: integer
+          minimum: 1
+        comment:
+          type: string
+          default: ''
+          maxLength: 500
+      required:
+      - expected_revision
+      - status
   securitySchemes:
     cookieAuth:
       type: apiKey

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { api, ApiError } from '../../../shared/api/client';
 import { displayName, initials, type Me } from '../../../shared/api/session';
-import { Badge } from '../../../shared/ui/Badge';
 import { Card } from '../../../shared/ui/Card';
 import { Page } from '../../../shared/ui/Page';
 import styles from './ProfilePage.module.css';
@@ -50,7 +49,10 @@ export default function ProfilePage() {
     </div>}
     {state.kind === 'ready' && <>
       {state.user.teacher_profile && !state.user.student_profile
-        ? <TeacherCard user={state.user} /> : <ProfileCard user={state.user} />}
+        ? <TeacherCard user={state.user} />
+        : state.user.staff_profile && !state.user.student_profile
+          ? <Card title={state.user.staff_profile.full_name}><p>Сотрудник деканата · {state.user.staff_profile.faculty}</p></Card>
+          : <ProfileCard user={state.user} />}
       <div className={styles.columns}>
         <Shortcuts user={state.user} />
         <section className={styles.section} aria-labelledby="account-title">
@@ -103,25 +105,26 @@ function TeacherCard({ user }: { user: Me }) {
   </article>;
 }
 
-type Shortcut = { title: string; text: string; to?: string };
+type Shortcut = { title: string; text: string; to: string };
 
 /** Where people usually go next from their profile. Unbuilt sections are shown honestly. */
 function Shortcuts({ user }: { user: Me }) {
   const items: Shortcut[] = user.roles.includes('student') ? [
     { title: 'Расписание на неделю', text: 'Пары, аудитории и переносы.', to: '/academics' },
     { title: 'Оценки и задолженности', text: 'Результаты работ и что пересдать.', to: '/academics' },
-    { title: 'Заявки и справки', text: 'Справка об обучении без очереди.' },
+    { title: 'Заявки и справки', text: 'Справка об обучении без очереди.', to: '/requests' },
   ] : user.roles.includes('teacher') ? [
     { title: 'Кабинет преподавателя', text: 'Задания, зачёты и ведомости групп.', to: '/teaching' },
+  ] : user.roles.includes('deanery_staff') ? [
+    { title: 'Кабинет деканата', text: 'Заявки и объявления факультета.', to: '/deanery' },
   ] : [];
   if (!items.length) return null;
   return <section className={styles.section} aria-labelledby="shortcuts-title">
     <h2 id="shortcuts-title">Быстрые переходы</h2>
     <ul className={styles.shortcuts}>
       {items.map(item => <li key={item.title}>
-        {item.to ? <Link to={item.to}>{item.title}</Link> : <span className={styles.shortcutTitle}>{item.title}</span>}
+        <Link to={item.to}>{item.title}</Link>
         <span className={styles.shortcutText}>{item.text}</span>
-        {!item.to && <Badge>В разработке</Badge>}
       </li>)}
     </ul>
   </section>;

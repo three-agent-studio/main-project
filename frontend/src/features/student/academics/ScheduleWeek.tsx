@@ -4,12 +4,14 @@ import type { Lesson } from '../../../shared/academics/api';
 import { Badge } from '../../../shared/ui/Badge';
 import { Card } from '../../../shared/ui/Card';
 import { groupWeek, loadWeek, moscowDateKey, moscowDateTitle, moscowMonday, moscowTime } from './schedule';
+import { downloadCalendar } from './calendar';
 import styles from './ScheduleWeek.module.css';
 
 export function ScheduleWeek() {
   const id = useId();
   const [today] = useState(() => moscowDateKey(new Date()));
   const [monday] = useState(() => moscowMonday(new Date()));
+  const [todayOnly, setTodayOnly] = useState(false);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<{attempt: number; lessons?: Lesson[]; error?: string}>();
   useEffect(() => {
@@ -21,7 +23,8 @@ export function ScheduleWeek() {
     return () => controller.abort();
   }, [monday, attempt]);
   const current = state?.attempt === attempt ? state : undefined;
-  const days = groupWeek(current?.lessons ?? [], monday);
+  const lessons = current?.lessons;
+  const days = groupWeek(lessons ?? [], monday);
   return <Card title="Расписание на текущую неделю">
     <div className={styles.intro}>
       <p className={styles.range}>{days[0].date} — {days[6].date}</p>
@@ -31,8 +34,15 @@ export function ScheduleWeek() {
     {current?.error && <div role="alert" className="notice notice-error">
       <p>{current.error}</p><button onClick={() => setAttempt(value => value + 1)}>Повторить</button>
     </div>}
-    {current?.lessons && <div className={styles.days}>
-      {days.map(day => <section className={`${styles.day} ${day.key === today ? styles.today : ''}`} key={day.key} aria-labelledby={`${id}-${day.key}`}>
+    {lessons && <div className={styles.controls}>
+      <button className="button-secondary" aria-pressed={todayOnly} onClick={() => setTodayOnly(value => !value)}>
+        Только сегодня
+      </button>
+      <button className="button-secondary" disabled={!lessons.some(lesson => lesson.status !== 'cancelled')}
+        onClick={() => downloadCalendar(lessons, monday)}>Скачать неделю (.ics)</button>
+    </div>}
+    {lessons && <div className={styles.days}>
+      {(todayOnly ? days.filter(day => day.key === today) : days).map(day => <section className={`${styles.day} ${day.key === today ? styles.today : ''}`} key={day.key} aria-labelledby={`${id}-${day.key}`}>
         <header className={styles.dayHeader}>
           <h3 id={`${id}-${day.key}`}>{day.title}</h3>
           <p>{day.date}</p>

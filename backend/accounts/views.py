@@ -16,8 +16,12 @@ class StudentLoginView(LoginView):
         # Explicit, Django-validated `next` still wins; dual-role users keep /profile.
         if self.get_redirect_url():
             return self.get_redirect_url()
+        if hasattr(self.request.user, "student_profile"):
+            return super().get_success_url()
+        if hasattr(self.request.user, "staff_profile"):
+            return "/deanery"
         teacher = getattr(self.request.user, "teacher_profile", None)
-        if teacher and teacher.is_active and not hasattr(self.request.user, "student_profile"):
+        if teacher and teacher.is_active:
             return "/teaching"
         return super().get_success_url()
 

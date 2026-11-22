@@ -44,6 +44,19 @@ jobs:
       - run: python manage.py makemigrations --check --dry-run
       - run: python manage.py migrate --noinput
       - run: pytest
+      - name: Restore a synthetic release backup into a separate database
+        shell: bash
+        env:
+          POSTGRES_CI_CONTAINER: ${{ job.services.postgres.id }}
+        run: |
+          access_dir="$(mktemp -d)"
+          trap 'rm -f "$access_dir/jury.json" "$access_dir/release.dump"; rmdir "$access_dir"' EXIT
+          python manage.py setup_contest_demo --credentials "$access_dir/jury.json"
+          docker exec "$POSTGRES_CI_CONTAINER" pg_dump -U deanery -Fc deanery > "$access_dir/release.dump"
+          docker exec "$POSTGRES_CI_CONTAINER" createdb -U deanery deanery_restore
+          docker exec -i "$POSTGRES_CI_CONTAINER" pg_restore -U deanery --exit-on-error -d deanery_restore < "$access_dir/release.dump"
+          POSTGRES_DB=deanery_restore python manage.py migrate --check
+          POSTGRES_DB=deanery_restore python manage.py shell < tests/check_restored_demo.py
       - run: python manage.py spectacular --file ../contracts/openapi.generated.yaml --validate --fail-on-warn
       - run: git diff --exit-code -- ../contracts/openapi.generated.yaml
       - run: pip check

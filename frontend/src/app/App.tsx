@@ -1,7 +1,7 @@
 import { Suspense, useEffect, type ComponentType } from 'react';
 import { Link, NavLink, Route, Routes, useLocation } from 'react-router';
 import { displayName, initials, useSession } from '../shared/api/session';
-import { BoardIcon, CalendarIcon, CapIcon, DotIcon, HomeIcon, UserIcon } from '../shared/ui/icons';
+import { BellIcon, RequestIcon, BoardIcon, CalendarIcon, CapIcon, DotIcon, HomeIcon, UserIcon } from '../shared/ui/icons';
 import { Page } from '../shared/ui/Page';
 import { modules } from './modules';
 import styles from './App.module.css';
@@ -10,6 +10,7 @@ import styles from './App.module.css';
 // A module without an entry gets a neutral dot and still works.
 const moduleIcons: Record<string, ComponentType> = {
   home: HomeIcon, profile: UserIcon, academics: CalendarIcon, teaching: BoardIcon,
+  requests: RequestIcon, notifications: BellIcon, deanery: BoardIcon,
 };
 
 export function App() {
@@ -30,7 +31,7 @@ export function App() {
           <span>Цифровой деканат<span className={styles.brandCaption}>Учебная жизнь в одном месте</span></span>
         </Link>
         <div className={styles.account}>
-          {session.kind === 'signed-in' && <Link className={styles.person} to="/profile">
+          {session.kind === 'signed-in' && <Link className={styles.person} aria-label={displayName(session.user)} to="/profile">
             <span className={styles.avatar} aria-hidden="true">{initials(displayName(session.user))}</span>
             <span className={styles.personName}>{displayName(session.user)}</span>
           </Link>}
