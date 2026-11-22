@@ -1,32 +1,94 @@
-.home { min-width:0; }
+.home { display:grid; gap:var(--space-6); min-width:0; }
 
-/* Greeting: the one large typographic moment of the cabinet. */
-.welcome { margin-bottom:var(--space-12); padding-bottom:var(--space-8); border-bottom:1px solid var(--ink); }
-.welcome h1 { max-width:18ch; margin-bottom:var(--space-4); font-size:clamp(1.875rem, 1.2rem + 3.6vw, 4rem); line-height:1.04; letter-spacing:-.03em; hyphens:auto; }
-.lead { max-width:46ch; margin-bottom:var(--space-6); color:var(--ink-soft); font-size:var(--text-lg); line-height:1.45; }
-.actions { display:flex; flex-wrap:wrap; gap:var(--space-3); }
-
-.sectionTitle { margin-bottom:var(--space-4); }
-/* Two columns on the grid, divided by hairlines; no boxed cards. */
-.upcoming { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); border-top:1px solid var(--line); }
-.upcoming li { display:grid; grid-template-columns:auto minmax(0,1fr); align-content:start; gap:var(--space-2) var(--space-4); padding:var(--space-6) var(--space-6) var(--space-6) 0; border-bottom:1px solid var(--line); }
-.upcoming li:nth-child(even) { padding-left:var(--space-6); border-left:1px solid var(--line); }
-.upcoming li > span:last-child { grid-column:2; }
-.upcoming h3 { margin:0 0 var(--space-1); font-size:var(--text-lg); }
-.upcoming h3 a { color:var(--ink); text-decoration:underline; text-decoration-color:var(--line-control); }
-.upcoming h3 a:hover { color:var(--primary-hover); text-decoration-color:currentColor; }
-.upcoming p { margin:0; color:var(--ink-soft); font-size:var(--text-sm); }
-.icon { display:grid; place-items:center; width:40px; height:40px; border-radius:var(--radius); background:var(--primary-soft); color:var(--primary-ink); }
-.icon svg { width:22px; height:22px; }
-
-@media (max-width:760px) {
-  .welcome { margin-bottom:var(--space-8); padding-bottom:var(--space-6); }
-  .upcoming { grid-template-columns:minmax(0,1fr); }
-  .upcoming li, .upcoming li:nth-child(even) { padding:var(--space-5) 0; border-left:0; }
-  .actions > * { flex:1 1 100%; }
+/* Linework stays in the background so the hero remains legible at any viewport. */
+.welcome {
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  padding:clamp(24px, 5vw, 52px);
+  border-radius:var(--radius-xl);
+  background:var(--cover);
+  box-shadow:var(--shadow-float);
+  color:var(--on-primary);
 }
-
+.welcome::before {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  width:min(64%, 460px);
+  aspect-ratio:1;
+  right:-15%;
+  top:-45%;
+  border:1px solid var(--cover-line);
+  border-radius:50%;
+  box-shadow:0 0 0 28px var(--cover-line), 0 0 0 62px var(--cover-line);
+  opacity:.55;
+}
+.welcome::after {
+  content:"";
+  position:absolute;
+  z-index:-1;
+  inset:0 0 0 53%;
+  background-image:linear-gradient(var(--cover-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--cover-line) 1px, transparent 1px);
+  background-size:34px 34px;
+  mask-image:linear-gradient(90deg, transparent, #000);
+  opacity:.4;
+}
+.date { display:inline-block; margin-bottom:var(--space-4); color:var(--on-primary-soft); font-size:var(--text-sm); }
+.date::first-letter { text-transform:uppercase; }
+.welcome h1 {
+  max-width:18ch;
+  margin-bottom:var(--space-4);
+  color:inherit;
+  font-size:clamp(2rem, 1.2rem + 3.6vw, 3.75rem);
+  line-height:1.07;
+  letter-spacing:-.04em;
+  hyphens:auto;
+}
+.lead { max-width:42ch; margin-bottom:var(--space-6); color:var(--on-primary-soft); font-size:var(--text-lg); }
+.actions { display:flex; flex-wrap:wrap; gap:var(--space-3); }
+.actions :global(.button) { background:var(--surface); color:var(--primary-active); }
+.actions :global(.button):hover { background:var(--primary-soft); }
+.actions :global(.button-secondary) { border-color:var(--on-primary-soft); background:transparent; color:var(--on-primary); }
+.actions :global(.button-secondary):hover { color:var(--primary-active); }
+.actions a:focus-visible { outline-color:var(--on-primary); }
+.home > section:not(.welcome) { margin-bottom:0; }
+.sectionTitle { margin-bottom:var(--space-4); }
+.upcoming { list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:var(--space-3); }
+.upcoming li {
+  position:relative;
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  align-content:start;
+  gap:var(--space-3);
+  padding:var(--space-4);
+  border:1px solid var(--line);
+  border-radius:var(--radius-lg);
+  background:var(--surface);
+  box-shadow:var(--shadow-panel);
+}
+.upcoming h3 { margin:0 0 var(--space-1); font-size:var(--text-base); }
+.upcoming h3 a { display:flex; align-items:baseline; justify-content:space-between; gap:var(--space-2); color:var(--ink); text-decoration:none; }
+.upcoming h3 a::after { content:""; position:absolute; inset:0; border-radius:var(--radius-lg); }
+.upcoming h3 a:focus-visible { outline:none; }
+.upcoming h3 a:focus-visible::after { outline:3px solid var(--primary); outline-offset:2px; }
+.shortcut:hover { border-color:var(--primary); }
+.shortcut:hover h3 a { color:var(--primary-hover); }
+.arrow { color:var(--primary-ink); }
+.upcoming p { margin:0; color:var(--ink-soft); font-size:var(--text-sm); }
+.icon { display:grid; place-items:center; width:42px; height:42px; border-radius:var(--radius); background:var(--primary-soft); color:var(--primary-ink); }
+.icon svg { width:22px; height:22px; }
 .todayLessons { list-style:none; margin:0 0 var(--space-4); padding:0; }
 .todayLessons li { display:grid; grid-template-columns:4em minmax(0,1fr); gap:var(--space-1) var(--space-3); padding:var(--space-3) 0; border-bottom:1px solid var(--line); overflow-wrap:anywhere; }
 .todayLessons time { color:var(--primary-ink); font-variant-numeric:tabular-nums; grid-row:span 2; }
 .todayLessons span { color:var(--ink-soft); font-size:var(--text-sm); }
+
+@media (max-width:560px) {
+  .home { gap:var(--space-5); }
+  .welcome { border-radius:var(--radius-lg); }
+  .welcome::before { width:80%; right:-35%; top:-20%; }
+  .lead { font-size:var(--text-base); }
+  .upcoming { grid-template-columns:minmax(0,1fr); }
+  .actions > * { flex:1 1 100%; }
+}

@@ -2,8 +2,16 @@ import type { ComponentType } from 'react';
 import { Link } from 'react-router';
 import { displayName, firstName, useSession } from '../../shared/api/session';
 import { BellIcon, CalendarIcon, GradesIcon, RequestIcon } from '../../shared/ui/icons';
+import { moscowDateKey } from '../student/academics/schedule';
 import { TodayCard } from './TodayCard';
 import styles from './HomePage.module.css';
+
+const dayLabel = new Intl.DateTimeFormat('ru-RU', {
+  timeZone: 'Europe/Moscow', weekday: 'long', day: 'numeric', month: 'long',
+});
+const moscowHour = new Intl.DateTimeFormat('en', {
+  timeZone: 'Europe/Moscow', hour: 'numeric', hourCycle: 'h23',
+});
 
 function greeting(hour: number): string {
   if (hour < 5) return 'Доброй ночи';
@@ -21,12 +29,16 @@ const upcoming: { title: string; text: string; Icon: ComponentType; to: string }
 
 export default function HomePage() {
   const session = useSession();
-  const hello = greeting(new Date().getHours());
+  const now = new Date();
+  const hello = greeting(Number(moscowHour.format(now)));
   const user = session.kind === 'signed-in' ? session.user : null;
+
+  const student = user?.roles.includes('student');
 
   return <div className={styles.home}>
     <section className={styles.welcome} aria-labelledby="home-title">
-      <h1 id="home-title">{user ? `${hello}, ${firstName(displayName(user))}` : `${hello}!`}</h1>
+      <time className={styles.date} dateTime={moscowDateKey(now)}>{dayLabel.format(now)} · МСК</time>
+      <h1 id="home-title">{user ? `${hello}, ${firstName(displayName(user))}` : 'Учёба под рукой'}</h1>
       <p className={styles.lead}>Здесь собрано всё, что связано с учёбой: от расписания до справок из деканата.</p>
       <div className={styles.actions}>
         {user?.roles.includes('student') && <>
@@ -43,11 +55,11 @@ export default function HomePage() {
 
     {user?.roles.includes('student') && <TodayCard key={user.id} />}
     <section aria-labelledby="upcoming-title">
-      <h2 id="upcoming-title" className={styles.sectionTitle}>Возможности кабинета</h2>
+      <h2 id="upcoming-title" className={styles.sectionTitle}>{student ? 'Быстрый переход' : 'Возможности кабинета'}</h2>
       <ul className={styles.upcoming}>
-        {upcoming.map(({ title, text, Icon, to }) => <li key={title}>
+        {upcoming.map(({ title, text, Icon, to }) => <li key={title} className={student ? styles.shortcut : undefined}>
           <span className={styles.icon}><Icon /></span>
-          <div><h3>{user?.roles.includes('student') ? <Link to={to}>{title}</Link> : title}</h3><p>{text}</p></div>
+          <div><h3>{student ? <Link to={to}>{title}<span className={styles.arrow} aria-hidden="true">↗</span></Link> : title}</h3><p>{text}</p></div>
         </li>)}
       </ul>
     </section>
