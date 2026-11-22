@@ -68,5 +68,7 @@ docker exec -i main-project-db-1 pg_restore -U deanery --exit-on-error \
 
 Inter распространяется по SIL OFL 1.1, копия лицензии лежит в
 `backend/core/static/core/fonts/OFL.txt`. MIT-лицензия исходников picomatch
-сохранена в `frontend/vendor/picomatch/LICENSE`. В интерфейсе используется
+сохранена в `frontend/vendor/picomatch/LICENSE`. Полные уведомления о лицензиях
+клиентских зависимостей включены в `backend/core/static/core/third-party.txt`
+и публикуются по `/static/core/third-party.txt`. В интерфейсе используется
 собственный знак проекта.
