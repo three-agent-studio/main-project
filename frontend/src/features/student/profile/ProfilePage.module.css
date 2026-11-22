@@ -1,7 +1,7 @@
 /* Student card: the single coloured surface of the cabinet. A blue cover carries the
    identity (initials, name, group); the details sit on white in grid columns below. */
-.card { margin-bottom:var(--space-8); overflow:hidden; border-radius:var(--radius-lg); background:var(--surface); border:1px solid var(--line); }
-.cardTop { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:end; gap:var(--space-6); padding:var(--space-8); background:var(--primary); color:var(--on-primary); }
+.card { margin-bottom:var(--space-8); overflow:hidden; border-radius:var(--radius-lg); background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-panel); }
+.cardTop { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:end; gap:var(--space-6); padding:var(--space-8); background:var(--cover); color:var(--on-primary); }
 .avatar { display:grid; place-items:center; width:72px; height:72px; border-radius:var(--radius); background:var(--surface); color:var(--primary-ink); font-size:var(--text-xl); font-weight:700; letter-spacing:-.01em; }
 .name { margin:0; color:var(--on-primary); font-size:clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem); line-height:1.08; letter-spacing:var(--tracking-tight); font-weight:700; hyphens:auto; }
 .group { display:grid; justify-items:end; gap:var(--space-1); margin:0; text-align:right; }
@@ -29,13 +29,14 @@
 }
 
 /* Below the card: shortcuts and the account, side by side on the grid. */
-.columns { display:grid; grid-template-columns:minmax(0,7fr) minmax(0,5fr); gap:var(--space-8); align-items:start; }
-.section { min-width:0; border-top:1px solid var(--ink); padding-top:var(--space-4); }
+.columns { display:grid; grid-template-columns:minmax(0,7fr) minmax(0,5fr); gap:var(--space-4); align-items:start; }
+.section { min-width:0; border:1px solid var(--line); border-radius:var(--radius-lg); padding:var(--space-5); background:var(--surface); box-shadow:var(--shadow-panel); }
 .section h2 { margin-bottom:var(--space-4); }
 .group span.role { font-size:var(--text-xl); letter-spacing:-.01em; }
 .shortcuts { list-style:none; margin:0; padding:0; }
 .shortcuts li { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:var(--space-1) var(--space-4); align-items:center; padding:var(--space-4) 0; border-bottom:1px solid var(--line); }
 .shortcuts li:first-child { padding-top:0; }
+.shortcuts li:last-child { border-bottom:0; padding-bottom:0; }
 .shortcuts a, .shortcutTitle { font-weight:650; }
 .shortcuts a { color:var(--ink); text-decoration:underline; text-decoration-color:var(--line-control); }
 .shortcuts a:hover { color:var(--primary-hover); text-decoration-color:currentColor; }

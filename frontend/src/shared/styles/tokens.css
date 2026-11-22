@@ -7,7 +7,7 @@
   /* Neutrals */
   --ink: #15171c;            /* text, 17.9:1 on white */
   --ink-soft: #59606c;       /* secondary text, 6.3:1 on white, 5.8:1 on paper */
-  --paper: #f4f5f7;          /* page background */
+  --paper: #f3f5fa;          /* page background */
   --surface: #ffffff;        /* panels */
   --surface-sunken: #eef0f3; /* table heads, quiet fills */
   --line: #dfe2e8;           /* hairline rules, decorative only */
@@ -41,10 +41,15 @@
   --leading: 1.5;
   --tracking-tight: -.022em;
 
-  /* Shape: small radii; larger surfaces get a slightly larger one. */
-  --radius-sm: 4px;
-  --radius: 6px;
-  --radius-lg: 10px;
+  /* Elevation is reserved for surfaces and controls. Status colours keep their own meanings. */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --cover: linear-gradient(124deg, #172c64, #25468f 66%, #325ab8);
+  --shadow-panel: 0 1px 2px #172c640a, 0 10px 24px #172c6408;
+  --shadow-float: 0 12px 28px #172c641c;
+  --cover-line: #fff2;
   --radius-pill: 999px;
 
   /* Space: 4px base */
