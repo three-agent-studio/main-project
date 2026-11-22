@@ -1,3 +1,5 @@
+export const sessionExpiredEvent = "deanery:session-expired";
+
 export class ApiError extends Error {
   constructor(public readonly status: number, public readonly details: unknown) {
     super(`API request failed (${status})`);
@@ -21,7 +23,13 @@ export async function api<T>(path: string, options: RequestInit = {}): Promise<T
   });
   const json = response.headers.get('content-type')?.includes('application/json');
   const data: unknown = response.status === 204 ? undefined : json ? await response.json() : null;
-  if (!response.ok) throw new ApiError(response.status, data);
+  if (!response.ok) {
+    const code = (data as {error?: {code?: string}} | null)?.error?.code;
+    if (path !== '/me/' && code === 'not_authenticated') {
+      window.dispatchEvent(new Event(sessionExpiredEvent));
+    }
+    throw new ApiError(response.status, data);
+  }
   if (response.status !== 204 && !json) throw new Error('Expected a JSON API response');
   return data as T;
 }

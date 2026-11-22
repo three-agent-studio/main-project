@@ -19,6 +19,12 @@ test('weekly schedule has seven day blocks, Moscow times and full teacher names'
   await expect(monday.getByText('ДЕМО-А · 201')).toBeVisible();
   await expect(page.getByText('Московское время · МСК', {exact:true})).toBeVisible();
   await expect(page.getByRole('region', {name:'Воскресенье',exact:true}).getByText('Занятий нет — свободный день')).toBeVisible();
+  const today = page.getByRole('button', { name: 'Только сегодня' });
+  await today.click();
+  await expect(today).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('region', {name: new RegExp(`^(${weekdays.join('|')})$`)})).toHaveCount(1);
+  await today.click();
+  await expect(page.getByRole('region', {name: 'Воскресенье', exact:true})).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({path:`test-results/schedule-days-${test.info().project.name}.png`,fullPage:true});
 });

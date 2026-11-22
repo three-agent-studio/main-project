@@ -1,0 +1,2 @@
+# The reviewed byte hashes must survive a Windows checkout with core.autocrlf=true.
+/frontend/vendor/picomatch/** text eol=lf

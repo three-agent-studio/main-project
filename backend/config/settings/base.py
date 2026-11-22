@@ -11,6 +11,7 @@ INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
     "django.contrib.sessions", "django.contrib.messages", "django.contrib.staticfiles",
     "rest_framework", "drf_spectacular", "accounts", "core", "axes", "academics",
+    "service_requests", "notifications",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -96,6 +97,8 @@ REST_FRAMEWORK = {
 }
 SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
+        "ServiceRequestKindEnum": "service_requests.models.ServiceRequest.Kind",
+        "ServiceRequestStatusEnum": "service_requests.models.ServiceRequest.Status",
         "LessonKindEnum": "academics.models.Lesson.Kind",
         "LessonStatusEnum": "academics.models.Lesson.Status",
         "ActivityKindEnum": "academics.teaching_models.AcademicActivity.Kind",

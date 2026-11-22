@@ -22,7 +22,7 @@ def atomic_private_json(path, data):
 
 
 def backup_database(environment, state, container, *, label="teaching"):
-    if label not in {"teaching", "schedule"}:
+    if label not in {"teaching", "schedule", "release"}:
         raise ValueError("Unsupported backup label.")
     host = environment.get("POSTGRES_HOST", "127.0.0.1")
     port = environment.get("POSTGRES_PORT", "5432")
