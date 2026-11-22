@@ -20,21 +20,54 @@ export interface Lesson {
 }
 export interface ApiPage<T> { count: number; next: string | null; previous: string | null; results: T[] }
 
-/** A response belongs to its exact URL/reload key; stale data never flashes for another class. */
-export function useApiPage<T>(path: string) {
+/** A response belongs to its exact URL, so a previous page never flashes. */
+export function useApiPage<T>(path: string, { refreshEveryMs }: { refreshEveryMs?: number } = {}) {
   const [page, setPage] = useState(1);
   const [attempt, setAttempt] = useState(0);
   const url = `${path}${path.includes('?') ? '&' : '?'}page=${page}`;
-  const key = `${url}|${attempt}`;
+  // Live lists keep the current page mounted when refreshed, including open disclosure panels.
+  const key = refreshEveryMs ? url : `${url}|${attempt}`;
   const [state, setState] = useState<{ key: string; data?: ApiPage<T>; error?: string }>({ key: '' });
   useEffect(() => {
     const controller = new AbortController();
-    api<ApiPage<T>>(url, { signal: controller.signal }).then(
-      data => { if (!controller.signal.aborted) setState({ key, data }); },
-      error => { if (!controller.signal.aborted) setState({ key, error: errorMessage(error) }); },
-    );
-    return () => controller.abort();
-  }, [url, key]);
+    let pending = false;
+
+    async function load() {
+      if (pending || controller.signal.aborted) return;
+      pending = true;
+      try {
+        const data = await api<ApiPage<T>>(url, { signal: controller.signal });
+        if (!controller.signal.aborted) setState({ key, data });
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        const accessLost = error instanceof ApiError && (error.status === 401 || error.status === 403);
+        const message = errorMessage(error);
+        setState(previous => ({
+          key, error: message,
+          data: refreshEveryMs && !accessLost && previous.key === key ? previous.data : undefined,
+        }));
+      } finally {
+        pending = false;
+      }
+    }
+
+    void load();
+    if (!refreshEveryMs) return () => controller.abort();
+
+    function refreshVisible() {
+      if (document.visibilityState === 'visible') void load();
+    }
+
+    const timer = window.setInterval(refreshVisible, refreshEveryMs);
+    document.addEventListener('visibilitychange', refreshVisible);
+    window.addEventListener('focus', refreshVisible);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refreshVisible);
+      window.removeEventListener('focus', refreshVisible);
+      controller.abort();
+    };
+  }, [url, key, attempt, refreshEveryMs]);
   const current = state.key === key ? state : undefined;
   return { data: current?.data, error: current?.error, loading: !current,
     page, setPage, reload: () => setAttempt(value => value + 1) };

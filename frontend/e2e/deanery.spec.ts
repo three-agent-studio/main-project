@@ -22,7 +22,8 @@ test('student submits a request, staff answers, only its owner receives the repl
   await openRequests();
   await page.getByLabel('Комментарий (необязательно)').fill(message);
   await page.getByRole('button', {name: 'Подать заявку'}).click();
-  await expect(page.getByText(message, {exact: true})).toBeVisible();
+  const studentTicket = page.getByRole('article').filter({hasText: message});
+  await expect(studentTicket.getByText('Подана', {exact: true}).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 
   const office = await browser.newContext({baseURL, viewport: page.viewportSize() ?? undefined});
@@ -40,11 +41,11 @@ test('student submits a request, staff answers, only its owner receives the repl
     await office.close();
   }
 
-  await openNotices();
-  await openRequests();
-  const ticket = page.getByRole('article').filter({hasText: message});
-  await ticket.getByText('История заявки (3)').click();
-  await expect(ticket.getByText(answer)).toBeVisible();
+  // The student's tab has remained on /requests throughout both staff updates.
+  await expect(studentTicket.getByText('Готова', {exact: true}).first()).toBeVisible({timeout: 15_000});
+  await expect(studentTicket.getByRole('region', {name: 'Ответ деканата'}).getByText(answer)).toBeVisible();
+  await studentTicket.getByText('История заявки (3)').click();
+  await expect(studentTicket.getByRole('list', {name: 'История статусов'}).getByText(answer)).toBeVisible();
   await openNotices();
   const notice = page.getByRole('article').filter({hasText: answer});
   await expect(notice).toBeVisible();

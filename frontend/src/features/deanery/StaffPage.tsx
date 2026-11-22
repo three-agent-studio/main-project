@@ -67,9 +67,9 @@ function Transition({ ticket, onSaved, onRefresh }: {
   return <form className={`${form.form} ${styles.actionForm}`} onSubmit={transition}>
     <div className={form.field}>
       <label htmlFor={commentId}>Ответ студенту</label>
-      <textarea id={commentId} value={comment} maxLength={500} disabled={saving || stale}
+      <textarea id={commentId} aria-describedby={`${commentId}-hint`} value={comment} maxLength={500} disabled={saving || stale}
         onChange={event => setComment(event.target.value)} />
-      <span className={form.hint}>При отказе укажите причину.</span>
+      <span id={`${commentId}-hint`} className={form.hint}>Выберите действие ниже, чтобы отправить ответ. При отказе укажите причину.</span>
     </div>
     <div className={styles.actions}>
       {pending ? <button value="in_progress" disabled={saving || stale}>Взять в работу</button> : <>
