@@ -1,8 +1,13 @@
 from django.db import transaction
+from django.db.models import Prefetch
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils.http import content_disposition_header
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
 
 from accounts.access import (
@@ -12,8 +17,14 @@ from accounts.access import (
     scope_student_records,
 )
 
-from .models import RequestEvent, ServiceRequest
-from .serializers import CreateRequestSerializer, RequestSerializer, TransitionSerializer
+from .models import RequestAttachment, RequestEvent, ServiceRequest
+from .serializers import (
+    MAX_ATTACHMENT_BYTES,
+    CreateRequestSerializer,
+    RequestSerializer,
+    TransitionSerializer,
+    TransitionWithAttachmentSerializer,
+)
 
 
 class Conflict(APIException):
@@ -22,7 +33,11 @@ class Conflict(APIException):
 
 
 def request_list():
-    return ServiceRequest.objects.select_related("student").prefetch_related("history")
+    # Refreshing a list reads only names and sizes, never the file contents.
+    history = RequestEvent.objects.select_related("attachment").defer("attachment__content")
+    return ServiceRequest.objects.select_related("student").prefetch_related(
+        Prefetch("history", queryset=history),
+    )
 
 
 class StudentRequests(generics.ListCreateAPIView):
@@ -57,7 +72,8 @@ class StudentRequests(generics.ListCreateAPIView):
         elif (ticket.kind, ticket.text) != (kind, text):
             raise Conflict("Эта отправка уже сохранена. Создайте новую заявку для другого текста.")
         return Response(
-            self.get_serializer(ticket).data, status=status.HTTP_201_CREATED if created else 200
+            self.get_serializer(request_list().get(pk=ticket.pk)).data,
+            status=status.HTTP_201_CREATED if created else 200,
         )
 
 
@@ -95,14 +111,24 @@ TRANSITIONS = {
 
 class StaffRequestStatus(generics.GenericAPIView):
     permission_classes = [IsDeaneryStaff]
-    serializer_class = TransitionSerializer
+    serializer_class = TransitionWithAttachmentSerializer
+    parser_classes = [JSONParser, MultiPartParser]
 
-    @extend_schema(responses={200: RequestSerializer})
+    @extend_schema(
+        request={
+            "application/json": TransitionSerializer,
+            "multipart/form-data": TransitionWithAttachmentSerializer,
+        },
+        responses={200: RequestSerializer},
+    )
     @transaction.atomic
     def post(self, request, pk):
         # Scope the lookup before locking. History and status commit together.
         queue = scope_faculty_records(ServiceRequest.objects.all(), request.user)
         ticket = get_object_or_404(queue.select_for_update(of=("self",)), pk=pk)
+        length = request.META.get("CONTENT_LENGTH") or "0"
+        if length.isdecimal() and int(length) > MAX_ATTACHMENT_BYTES + 64 * 1024:
+            raise ValidationError({"attachment": "Файл должен быть не больше 5 МБ."})
         incoming = self.get_serializer(data=request.data)
         incoming.is_valid(raise_exception=True)
         status, revision, comment = (
@@ -117,11 +143,49 @@ class StaffRequestStatus(generics.GenericAPIView):
         ticket.status = status
         ticket.revision += 1
         ticket.save(update_fields=["status", "revision", "updated_at"])
-        RequestEvent.objects.create(
+        event = RequestEvent.objects.create(
             ticket=ticket,
             status=status,
             revision=ticket.revision,
             comment=comment,
             actor=request.user,
         )
-        return Response(RequestSerializer(ticket).data)
+        if attachment := incoming.validated_data.get("attachment"):
+            RequestAttachment.objects.create(
+                event=event,
+                filename=attachment.name,
+                size=attachment.size,
+                content=attachment.read(),
+            )
+        return Response(RequestSerializer(request_list().get(pk=ticket.pk)).data)
+
+
+class StudentRequestAttachment(generics.GenericAPIView):
+    queryset = RequestAttachment.objects.all()
+
+    def get_ticket_scope(self):
+        return scope_student_records(ServiceRequest.objects.all(), self.request.user)
+
+    @extend_schema(responses={(200, "application/octet-stream"): OpenApiTypes.BINARY})
+    def get(self, request, pk, event_id):
+        # Check the ticket and event together before reading any bytes.
+        attachment = get_object_or_404(
+            self.get_queryset().filter(event__ticket__in=self.get_ticket_scope()),
+            event__ticket_id=pk,
+            event_id=event_id,
+        )
+        return HttpResponse(
+            bytes(attachment.content),
+            content_type="application/octet-stream",
+            headers={
+                "Content-Disposition": content_disposition_header(True, attachment.filename),
+                "X-Content-Type-Options": "nosniff",
+            },
+        )
+
+
+class StaffRequestAttachment(StudentRequestAttachment):
+    permission_classes = [IsDeaneryStaff]
+
+    def get_ticket_scope(self):
+        return scope_faculty_records(ServiceRequest.objects.all(), self.request.user)

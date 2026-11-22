@@ -15,6 +15,7 @@ test('student submits a request, staff answers, only its owner receives the repl
   test.setTimeout(60000);
   const message = `Тестовая справка ${info.project.name} ${Date.now()}`;
   const answer = `Справка готова ${info.project.name} ${Date.now()}`;
+  const pdf = Buffer.from('%PDF-1.4\n% test attachment\n%%EOF');
   await login(page, 'browser_student', '/profile');
   const navigation = page.getByRole('navigation', {name: 'Основная навигация'});
   const openRequests = () => navigation.getByRole('link', {name: 'Заявки', exact: true}).click();
@@ -34,6 +35,9 @@ test('student submits a request, staff answers, only its owner receives the repl
     await ticket.getByRole('button', {name: 'Взять в работу'}).click();
     await expect(ticket.getByRole('button', {name: 'Отметить готовой'})).toBeVisible();
     await ticket.getByLabel('Ответ студенту').fill(answer);
+    await ticket.getByLabel('Приложить файл').setInputFiles({
+      name: 'spravka.pdf', mimeType: 'application/pdf', buffer: pdf,
+    });
     await ticket.getByRole('button', {name: 'Отметить готовой'}).click();
     await expect(ticket.getByText('Готова', {exact: true}).first()).toBeVisible();
     expect(await employee.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -43,7 +47,16 @@ test('student submits a request, staff answers, only its owner receives the repl
 
   // The student's tab has remained on /requests throughout both staff updates.
   await expect(studentTicket.getByText('Готова', {exact: true}).first()).toBeVisible({timeout: 15_000});
-  await expect(studentTicket.getByRole('region', {name: 'Ответ деканата'}).getByText(answer)).toBeVisible();
+  const reply = studentTicket.getByRole('region', {name: 'Ответ деканата'});
+  await expect(reply.getByText(answer)).toBeVisible();
+  const download = reply.getByRole('link', {name: 'Скачать spravka.pdf'});
+  await expect(download).toBeVisible();
+  const url = await download.getAttribute('href');
+  expect(url).toBeTruthy();
+  const downloaded = await page.request.get(url!);
+  expect(downloaded.status()).toBe(200);
+  expect(downloaded.headers()['content-disposition']).toContain('attachment');
+  expect(await downloaded.body()).toEqual(pdf);
   await studentTicket.getByText('История заявки (3)').click();
   await expect(studentTicket.getByRole('list', {name: 'История статусов'}).getByText(answer)).toBeVisible();
   await openNotices();
@@ -65,6 +78,7 @@ test('student submits a request, staff answers, only its owner receives the repl
     await student.getByRole('link', {name: /^(Уведомления|Новости)$/}).click();
     await expect(student.getByText('Уведомлений пока нет')).toBeVisible();
     await expect(student.getByText(answer)).toHaveCount(0);
+    expect((await student.request.get(url!)).status()).toBe(404);
   } finally {
     await other.close();
   }

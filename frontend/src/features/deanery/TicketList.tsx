@@ -4,7 +4,7 @@ import { Pagination } from '../../shared/academics/Pagination';
 import { Badge } from '../../shared/ui/Badge';
 import { Card } from '../../shared/ui/Card';
 import { EmptyState } from '../../shared/ui/EmptyState';
-import { kinds, statuses, tones, type Ticket } from './tickets';
+import { kinds, statuses, tones, type Ticket, type TicketEvent } from './tickets';
 import styles from './Deanery.module.css';
 
 export type TicketQuery = ReturnType<typeof useApiPage<Ticket>>;
@@ -28,12 +28,11 @@ export function TicketList({ query, staff = false, action }: {
   </Card>;
 }
 
-
 function TicketEntry({ ticket, staff, children }: {
   ticket: Ticket; staff: boolean; children?: ReactNode;
 }) {
-  // Keep the most recent non-empty reply visible even if a later status has no comment.
-  const reply = staff ? undefined : [...ticket.history].reverse().find(event => event.comment.trim());
+  // Keep the most recent non-empty reply visible even if a later status has no text or file.
+  const reply = staff ? undefined : [...ticket.history].reverse().find(event => event.comment.trim() || event.attachment);
   return <article className={styles.entry}>
     <div className={styles.heading}>
       <h3>{kinds[ticket.kind]}</h3>
@@ -46,7 +45,8 @@ function TicketEntry({ ticket, staff, children }: {
     {reply && <section className={styles.reply} aria-label="Ответ деканата">
       <strong>Ответ деканата</strong>
       <time className={styles.meta} dateTime={reply.created_at}>{dateLabel(reply.created_at)}</time>
-      <p>{reply.comment}</p>
+      {reply.comment && <p>{reply.comment}</p>}
+      <AttachmentLink ticket={ticket} event={reply} staff={false} />
     </section>}
     <details className={styles.details}>
       <summary>История заявки ({ticket.history.length})</summary>
@@ -55,9 +55,19 @@ function TicketEntry({ ticket, staff, children }: {
           <strong>{statuses[event.status]}</strong>
           <time dateTime={event.created_at} className={styles.meta}>{dateLabel(event.created_at)}</time>
           {event.comment && <p>{event.comment}</p>}
+          <AttachmentLink ticket={ticket} event={event} staff={staff} />
         </li>)}
       </ol>
     </details>
     {children}
   </article>;
+}
+
+
+function AttachmentLink({ ticket, event, staff }: { ticket: Ticket; event: TicketEvent; staff: boolean }) {
+  if (!event.attachment) return null;
+  const path = `/api/v1/${staff ? 'staff/' : ''}requests/${ticket.id}/history/${event.id}/attachment/`;
+  return <a className={styles.attachment} href={path} download>
+    Скачать {event.attachment.filename}
+  </a>;
 }

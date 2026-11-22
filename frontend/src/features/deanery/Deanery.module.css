@@ -17,3 +17,6 @@
 .reply strong { color:var(--primary-ink); }
 .reply time { display:block; }
 .reply p { margin-bottom:0; }
+.attachment { display:inline-flex; align-items:center; min-height:44px; font-weight:600; overflow-wrap:anywhere; }
+.actionForm input.fileInput { font-size:var(--text-sm); }
+.fileInput::file-selector-button { margin-right:var(--space-2); padding:var(--space-1) var(--space-2); border:1px solid var(--line-control); border-radius:var(--radius-sm); background:var(--surface); color:var(--ink); font:inherit; }
